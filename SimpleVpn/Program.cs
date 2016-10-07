@@ -55,7 +55,7 @@ namespace SimpleVpn
 
             while (true)
             {
-                Console.Write("To send: ");
+                Console.Write(Constants.SendMsg);
                 var msg = Console.ReadLine();
 
                 Conversation.Speak(msg, soc);

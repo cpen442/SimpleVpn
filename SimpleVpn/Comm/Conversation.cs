@@ -24,7 +24,9 @@ namespace SimpleVpn.Comm
             }
             if (state.sb.ToString().Contains(Constants.EOF))
             {
-                Console.WriteLine("Received: {0}", state.sb.ToString().Replace(Constants.EOF, ""));
+                Console.SetCursorPosition(0,Console.CursorTop);
+                Console.WriteLine(Constants.ReceivedMsg +  state.sb.ToString().Replace(Constants.EOF, ""));
+                Console.Write(Constants.SendMsg);
                 state.sb.Clear();
             }
 
