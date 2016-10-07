@@ -1,32 +1,36 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
+using SimpleVpn.Const;
 
-namespace SimpleVpn
+namespace SimpleVpn.Comm
 {
     class Client
     {
         private Socket _sender;
+        private IPEndPoint remoteEP;
 
         public Client(IPAddress svrIpAddr, int svrPort)
         {
-            var remoteEP = new IPEndPoint(svrIpAddr, svrPort);
+            remoteEP = new IPEndPoint(svrIpAddr, svrPort);
+        }
+
+        public Socket Connect()
+        {
             _sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             _sender.Connect(remoteEP);
 
             Console.WriteLine("Socket connected to {0}", _sender.RemoteEndPoint.ToString());
-        }
 
-        public void Speak(string message)
-        {
-            var m = message + Constants.EOF;
-            var msg = Encoding.ASCII.GetBytes(m);
-            _sender.Send(msg);
+
+            SocketState state = new SocketState();
+            state.workSocket = _sender;
+
+            _sender.BeginReceive(state.buffer, 0, SocketState.BufferSize, 0,
+                new AsyncCallback(Conversation.OnReceive), state);
+            return _sender;
         }
 
         public void Shutdown()
