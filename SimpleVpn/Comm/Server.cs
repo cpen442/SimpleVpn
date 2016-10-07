@@ -3,12 +3,14 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using SimpleVpn.Const;
+using SimpleVpn.Crypto;
 
 namespace SimpleVpn.Comm
 {
     class Server
     {
         private Socket _listener;
+        private Conversation conv;
 
         public Server(int port)
         {
@@ -22,7 +24,7 @@ namespace SimpleVpn.Comm
             Console.WriteLine("Server running at: {0}:{1}", ipAddress, port);
         }
 
-        public Socket Listen()
+        public Conversation Listen()
         {
             int backlog = 10;
             _listener.Listen(backlog);
@@ -33,11 +35,17 @@ namespace SimpleVpn.Comm
 
             SocketState state = new SocketState();
             state.workSocket = handler;
+            
+            //TODO:handshake here
+            var secret = new Secret();
+            //
+
+            this.conv = new Conversation(handler, secret);
 
             handler.BeginReceive(state.buffer, 0, SocketState.BufferSize, 0,
-                new AsyncCallback(Conversation.OnReceive), state);
+                new AsyncCallback(this.conv.OnReceive), state);
 
-            return handler;
+            return conv;
         }
     }
 }

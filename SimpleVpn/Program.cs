@@ -19,7 +19,7 @@ namespace SimpleVpn
             var selectedMode = Console.ReadLine();
             var mode = Convert.ToInt32(selectedMode);
 
-            Socket soc;
+            Conversation conversation;
 
             switch (mode)
             {
@@ -30,7 +30,7 @@ namespace SimpleVpn
                     var port = Convert.ToInt32(inputPort);
 
                     var server = new Server(port);
-                    soc = server.Listen();
+                    conversation = server.Listen();
 
                     break;
 
@@ -45,7 +45,7 @@ namespace SimpleVpn
                     var svrPort = Convert.ToInt32(inputSvrPort);
 
                     var client = new Client(svrIpAddr, svrPort);
-                    soc = client.Connect();
+                    conversation = client.Connect();
 
                     break;
 
@@ -58,7 +58,7 @@ namespace SimpleVpn
                 Console.Write(Constants.SendMsg);
                 var msg = Console.ReadLine();
 
-                Conversation.Speak(msg, soc);
+                conversation.Speak(msg);
             }
         }
     }

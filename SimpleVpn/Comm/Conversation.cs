@@ -5,12 +5,22 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using SimpleVpn.Const;
+using SimpleVpn.Crypto;
 
 namespace SimpleVpn.Comm
 {
-    public static class Conversation
+    public class Conversation
     {
-        public static void OnReceive(IAsyncResult ar)
+        private Socket socket;
+        private Secret secret;
+
+        public Conversation(Socket socket, Secret secret)
+        {
+            this.socket = socket;
+            this.secret = secret;
+        }
+
+        public void OnReceive(IAsyncResult ar)
         {
 
             SocketState state = (SocketState)ar.AsyncState;
@@ -25,7 +35,8 @@ namespace SimpleVpn.Comm
             if (state.sb.ToString().Contains(Constants.EOF))
             {
                 Console.SetCursorPosition(0,Console.CursorTop);
-                Console.WriteLine(Constants.ReceivedMsg +  state.sb.ToString().Replace(Constants.EOF, ""));
+                var msg = state.sb.ToString().Replace(Constants.EOF, "");
+                Console.WriteLine(Constants.ReceivedMsg +  this.secret.Decrypt(msg));
                 Console.Write(Constants.SendMsg);
                 state.sb.Clear();
             }
@@ -34,11 +45,11 @@ namespace SimpleVpn.Comm
                 new AsyncCallback(OnReceive), state);
         }
 
-        public static void Speak(string message, Socket socket)
+        public void Speak(string message)
         {
-            var m = message + Constants.EOF;
+            var m = this.secret.Encrypt(message) + Constants.EOF;
             var msg = Encoding.ASCII.GetBytes(m);
-            socket.Send(msg);
+            this.socket.Send(msg);
         }
     }
 }
