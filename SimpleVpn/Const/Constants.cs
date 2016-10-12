@@ -2,7 +2,7 @@
 {
     static class Constants
     {
-        public const string EOF = "<EOF>";
+        public const byte EOF = 0x00;  //magic
 
         public const string SendMsg = "Send: ";
         public const string ReceivedMsg = "Received: ";

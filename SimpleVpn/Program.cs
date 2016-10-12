@@ -20,6 +20,7 @@ namespace SimpleVpn
             var mode = Convert.ToInt32(selectedMode);
 
             Conversation conversation;
+            string passwd;
 
             switch (mode)
             {
@@ -30,7 +31,11 @@ namespace SimpleVpn
                     var port = Convert.ToInt32(inputPort);
 
                     var server = new Server(port);
-                    conversation = server.Listen();
+
+                    Console.Write("Please set a password:");
+                    passwd = Console.ReadLine(); //leaving password as visible string for now.. should we hide it?
+                    conversation = server.Listen(passwd);
+                    passwd = null; //lets forget passwd 
 
                     break;
 
@@ -45,7 +50,10 @@ namespace SimpleVpn
                     var svrPort = Convert.ToInt32(inputSvrPort);
 
                     var client = new Client(svrIpAddr, svrPort);
-                    conversation = client.Connect();
+                    Console.Write("Please enter the password:");
+                    passwd = Console.ReadLine(); //leaving password as visible string for now.. should we hide it?
+                    conversation = client.Connect(passwd);
+                    passwd = null; //lets forget passwd 
 
                     break;
 

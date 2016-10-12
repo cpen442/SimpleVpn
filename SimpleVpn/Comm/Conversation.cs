@@ -30,15 +30,16 @@ namespace SimpleVpn.Comm
 
             if (bytesRead > 0)
             {
-                state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
+                state.longTermBuffer.AddRange(state.buffer.Take(bytesRead));
             }
-            if (state.sb.ToString().Contains(Constants.EOF))
+            if (state.longTermBuffer.Last().Equals(Constants.EOF))
             {
-                Console.SetCursorPosition(0,Console.CursorTop);
-                var msg = state.sb.ToString().Replace(Constants.EOF, "");
-                Console.WriteLine(Constants.ReceivedMsg +  this.secret.Decrypt(msg));
+                var decrypted = secret.Decrypt(state.longTermBuffer.Take(state.longTermBuffer.Count-1)); //remove the EOF byte then decrypt
+                var msg = Encoding.ASCII.GetString(decrypted);
+                Console.SetCursorPosition(0, Console.CursorTop);
+                Console.WriteLine(Constants.ReceivedMsg + msg);
                 Console.Write(Constants.SendMsg);
-                state.sb.Clear();
+                state.longTermBuffer.Clear();
             }
 
             client.BeginReceive(state.buffer, 0, SocketState.BufferSize, 0,
@@ -47,9 +48,13 @@ namespace SimpleVpn.Comm
 
         public void Speak(string message)
         {
-            var m = this.secret.Encrypt(message) + Constants.EOF;
-            var msg = Encoding.ASCII.GetBytes(m);
-            this.socket.Send(msg);
+            var bytes = Encoding.ASCII.GetBytes(message);
+            var encrypted = this.secret.Encrypt(bytes);
+            //appending EOF byte
+            var sending = new List<byte>();
+            sending.AddRange(encrypted);
+            sending.Add(Constants.EOF);
+            this.socket.Send(sending.ToArray());
         }
     }
 }

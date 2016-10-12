@@ -18,7 +18,7 @@ namespace SimpleVpn.Comm
             remoteEP = new IPEndPoint(svrIpAddr, svrPort);
         }
 
-        public Conversation Connect()
+        public Conversation Connect(string passwd)
         {
             _sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -30,8 +30,9 @@ namespace SimpleVpn.Comm
             SocketState state = new SocketState();
             state.workSocket = _sender;
 
-            //TODO:handshake here
+            //TODO:client's handshake here
             var secret = new Secret();
+            passwd = null; //remember to forget password after handshake
             //
 
             this.conv = new Conversation(_sender, secret);

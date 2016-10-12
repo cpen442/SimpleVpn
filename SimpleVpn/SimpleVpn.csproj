@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CConsole.cs" />
     <Compile Include="Comm\Client.cs" />
     <Compile Include="Comm\Conversation.cs" />
     <Compile Include="Comm\SocketState.cs" />

@@ -24,7 +24,7 @@ namespace SimpleVpn.Comm
             Console.WriteLine("Server running at: {0}:{1}", ipAddress, port);
         }
 
-        public Conversation Listen()
+        public Conversation Listen(string passwd)
         {
             int backlog = 10;
             _listener.Listen(backlog);
@@ -36,8 +36,9 @@ namespace SimpleVpn.Comm
             SocketState state = new SocketState();
             state.workSocket = handler;
             
-            //TODO:handshake here
+            //TODO:server's handshake here
             var secret = new Secret();
+            passwd = null; //remember to forget password after handshake
             //
 
             this.conv = new Conversation(handler, secret);
