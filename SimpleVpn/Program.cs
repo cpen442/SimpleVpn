@@ -6,8 +6,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using SimpleVpn.Comm;
-using SimpleVpn.Const;
+using SimpleVpn.Comms;
+using SimpleVpn.Constants;
 
 namespace SimpleVpn
 {
@@ -20,7 +20,6 @@ namespace SimpleVpn
             var mode = Convert.ToInt32(selectedMode);
 
             Conversation conversation;
-            string passwd;
 
             switch (mode)
             {
@@ -32,10 +31,9 @@ namespace SimpleVpn
 
                     var server = new Server(port);
 
-                    Console.Write("Please set a password:");
-                    passwd = Console.ReadLine(); //leaving password as visible string for now.. should we hide it?
-                    conversation = server.Listen(passwd);
-                    passwd = null; //lets forget passwd 
+                    Console.Write("Please enter shared key:");
+                    var sharedKey = Console.ReadLine();
+                    conversation = server.Converse(sharedKey);
 
                     break;
 
@@ -50,10 +48,9 @@ namespace SimpleVpn
                     var svrPort = Convert.ToInt32(inputSvrPort);
 
                     var client = new Client(svrIpAddr, svrPort);
-                    Console.Write("Please enter the password:");
-                    passwd = Console.ReadLine(); //leaving password as visible string for now.. should we hide it?
-                    conversation = client.Connect(passwd);
-                    passwd = null; //lets forget passwd 
+                    Console.Write("Please enter shared key:");
+                    var sharedKey_ = Console.ReadLine();
+                    conversation = client.Converse(sharedKey_);
 
                     break;
 
@@ -63,7 +60,7 @@ namespace SimpleVpn
 
             while (true)
             {
-                Console.Write(Constants.SendMsg);
+                Console.Write(Variables.SendMsg);
                 var msg = Console.ReadLine();
 
                 conversation.Speak(msg);
