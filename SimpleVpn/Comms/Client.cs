@@ -7,6 +7,7 @@ using SimpleVpn.Crypto;
 using SimpleVpn.Handshake;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using System.Numerics;
 
 namespace SimpleVpn.Comms
 {
@@ -44,7 +45,7 @@ namespace SimpleVpn.Comms
             // ClntToSvr: "Client", Ra
             // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
             // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-
+            
             var newKey = "newkey";
 
             Console.WriteLine("Handshake complete, new key: {0}", newKey);
