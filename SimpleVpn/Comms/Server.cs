@@ -13,6 +13,7 @@ namespace SimpleVpn.Comms
         private Socket _listener;
         private Conversation _conversation;
 
+        // creates a server
         public Server(int port)
         {
             var ipHostInfo = Dns.Resolve(Dns.GetHostName());
@@ -34,31 +35,47 @@ namespace SimpleVpn.Comms
             var handler = _listener.Accept();
             Console.WriteLine("Connected to client: {0}", handler.RemoteEndPoint.ToString());
 
-            var newKey = ShakeHands(sharedKey);
-            var cipher = new Cipher(newKey);
+            // initiate conversation
+            _conversation = new Conversation(handler, new Cipher(sharedKey)); 
 
-            _conversation = new Conversation(handler, cipher);
-
+            // create socket
             var state = new SocketState();
             state.WorkSocket = handler;
 
+            // connect
             handler.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
                 new AsyncCallback(_conversation.Listen), state);
+
+            // pass the conversation to handshake
+            _conversation = ShakeHands(sharedKey, _conversation);
 
             return _conversation;
         }
 
-        private string ShakeHands(string sharedKey)
+        // returns the conversation with DH value as session key
+        /* PROTOCOL IS AS FOLLOWS: */
+        // ClntToSvr: "Client", Ra
+        // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
+        // ClntToSvr: E("Client", Rb, g^a modp, Kab)
+        private Conversation ShakeHands(string sharedKey, Conversation _conversation)
         {
-            // ClntToSvr: "Client", Ra
-            // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
-            // ClntToSvr: E("Client", Rb, g^a modp, Kab)
 
-            var newKey = "newkey";
+            /* var generator = 5;
+             var prime = 23;
+             var serverSecret = 7; //can be a string
 
-            Console.WriteLine("Handshake complete, new key: {0}", newKey);
+             var DHval = ShakeHands(sharedKey); // get DH value
+             var cipher = new Cipher(DHval.ToString()); // make DH the session key
 
-            return newKey;
+             _conversation = new Conversation(handler, cipher); // start a conversation
+
+             int serverDH = (int)Math.Pow(generator, serverSecret) % prime;
+             Console.WriteLine("serverDH: {0}", serverDH);
+
+             int DHvalue = serverDH;
+             Console.WriteLine("Handshake complete, final server-computed DH is: {0}", DHvalue);*/
+
+            return _conversation;
         }
     }
 }

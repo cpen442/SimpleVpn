@@ -14,11 +14,18 @@ namespace SimpleVpn.Comms
         private Socket _socket;
         private Cipher _cipher;
 
+        // creates a conversation
         public Conversation(Socket socket, Cipher secret)
         {
             _socket = socket;
             _cipher = secret;
         }
+
+        // changes the current key to the given key (Kab to DHkey)
+        public Cipher changeSecret(Cipher secret) {
+            return this._cipher = secret;
+        }
+
 
         public void Listen(IAsyncResult ar)
         {
@@ -43,12 +50,16 @@ namespace SimpleVpn.Comms
 
             client.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
                 new AsyncCallback(Listen), state);
+
         }
 
         public void Speak(string message)
         {
             var bytes = Encoding.ASCII.GetBytes(message);
-            var encrypted = _cipher.Encrypt(bytes);
+            var encrypted = bytes;
+    
+            encrypted = _cipher.Encrypt(bytes);
+          
             var sending = new List<byte>();
             sending.AddRange(encrypted);
             sending.Add(Variables.EOF);

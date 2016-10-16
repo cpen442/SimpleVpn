@@ -8,13 +8,16 @@ using System.Text;
 using System.Threading.Tasks;
 using SimpleVpn.Comms;
 using SimpleVpn.Constants;
+using System.Numerics;
 
 namespace SimpleVpn
 {
     class Program
     {
+        
         static void Main(string[] args)
         {
+
             Console.Write("Please enter {0} for Server mode, or {1} for client mode: ", (int)Mode.Server, (int)Mode.Client);
             var selectedMode = Console.ReadLine();
             var mode = Convert.ToInt32(selectedMode);
@@ -31,8 +34,8 @@ namespace SimpleVpn
 
                     var server = new Server(port);
 
-                    Console.Write("Please enter shared key:");
-                    var sharedKey = Console.ReadLine();
+                    Console.Write("Please enter a secret shared key:");
+                    string sharedKey = Console.ReadLine();
                     conversation = server.Converse(sharedKey);
 
                     break;
@@ -48,8 +51,8 @@ namespace SimpleVpn
                     var svrPort = Convert.ToInt32(inputSvrPort);
 
                     var client = new Client(svrIpAddr, svrPort);
-                    Console.Write("Please enter shared key:");
-                    var sharedKey_ = Console.ReadLine();
+                    Console.Write("Please enter a shared secret key:");
+                    string sharedKey_ = Console.ReadLine();
                     conversation = client.Converse(sharedKey_);
 
                     break;
@@ -65,6 +68,7 @@ namespace SimpleVpn
 
                 conversation.Speak(msg);
             }
+            
         }
     }
 }
