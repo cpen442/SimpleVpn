@@ -57,25 +57,49 @@ namespace SimpleVpn.Comms
         // ClntToSvr: "Client", Ra
         // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
         // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-        private Conversation ShakeHands(string sharedKey, Conversation _conversation)
+        private Conversation ShakeHands(string sharedKey, Conversation convos)
         {
+            //TODO: mutual authentication
 
-            /* var generator = 5;
-             var prime = 23;
-             var serverSecret = 7; //can be a string
+            DiffieHellman DH = new DiffieHellman();
 
-             var DHval = ShakeHands(sharedKey); // get DH value
-             var cipher = new Cipher(DHval.ToString()); // make DH the session key
+            // generate g^b mod p
+            string b = "";
+            BigInteger DHb_val = 0;
+            do
+            {
+                try
+                {
+                    Console.Write("Please enter your very own secret integer number:");
+                    b = Console.ReadLine();
+                    
+                    DHb_val = DH.hardComputeSharedDH(Convert.ToInt64(b));
+                    CConsole.WriteLine("The g^b mod p value is:" + DHb_val, ConsoleColor.Red); //red for testing
+                }
+                catch(FormatException) {
+                    Console.WriteLine("Error: enter a INTEGER number!");
+                }
+             
+            } while (DHb_val == 0);
 
-             _conversation = new Conversation(handler, cipher); // start a conversation
+            // send this DHb value 
+            convos.Speak(DHb_val.ToString());
 
-             int serverDH = (int)Math.Pow(generator, serverSecret) % prime;
-             Console.WriteLine("serverDH: {0}", serverDH);
+            // listen for DHa value from client (TODO)
+            BigInteger DHa_val = 3;// for testing 
 
-             int DHvalue = serverDH;
-             Console.WriteLine("Handshake complete, final server-computed DH is: {0}", DHvalue);*/
+            // --> b = 3
+            // --> DHb_val = 7^3 % 23 = 21 
+            // --> DH_final = 3^3 % 23 = 4
 
-            return _conversation;
+            // calculate DH value
+            BigInteger DH_final = DH.hardComputeFinalDH(DHa_val, Convert.ToInt64(b));
+            CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Red); // red for testing
+            
+            // set final DH as session key
+            convos.changeSecret(DH_final.ToString());
+
+            return convos;
         }
     }
 }

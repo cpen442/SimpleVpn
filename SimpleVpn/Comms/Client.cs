@@ -50,16 +50,50 @@ namespace SimpleVpn.Comms
         // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
         // ClntToSvr: E("Client", Rb, g^a modp, Kab)
 
-        private Conversation ShakeHands(string sharedKey, Conversation _conversation)
+        private Conversation ShakeHands(string sharedKey, Conversation convos)
         {
-            /*var generator;
-            var prime;
-            var clientSecret = 2; // can be string
-           
-            int clientDH = (int)Math.Pow(generator, Convert.ToInt64(clientSecret)) % prime;
-            Console.WriteLine("client DH value: {0}", clientDH);
-            */
-            return _conversation;
+            //TODO: mutual authentication
+
+            DiffieHellman DH = new DiffieHellman();
+
+            // generate g^a mod p
+            string a = "";  
+            BigInteger DHa_val = 0;
+            do
+            {
+                try
+                {
+                    Console.Write("Please enter your very own secret NUMBER:");
+                    a = Console.ReadLine();
+                    DHa_val = DH.hardComputeSharedDH(Convert.ToInt64(a));
+                    CConsole.WriteLine("The g^a mod p value is:" + DHa_val, ConsoleColor.Red); // red for testing
+
+                }
+                catch (FormatException)
+                {
+                    Console.WriteLine("Error: enter a INTEGER number!");
+                }
+            } while (DHa_val == 0);
+
+            // send this DHa value  
+            convos.Speak(DHa_val.ToString());
+
+            // listen for DHb value from server (TODO)
+            BigInteger DHb_val = 21; // for testing 
+
+            // a = 2
+            // DHa_val = 7^2 % 23 = 3 
+            //--> DH_final = 21^2 % 23 = 4
+            
+
+            // calculate DH value
+            BigInteger DH_final = DH.hardComputeFinalDH(DHb_val, Convert.ToInt64(a));
+            CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Red); // red for testing
+
+            // set final DH as session key
+            convos.changeSecret(DH_final.ToString());
+
+            return convos;
         }
 
         public void Shutdown()

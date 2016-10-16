@@ -14,15 +14,25 @@ namespace SimpleVpn
 {
     class Program
     {
-        
+
         static void Main(string[] args)
         {
 
-            Console.Write("Please enter {0} for Server mode, or {1} for client mode: ", (int)Mode.Server, (int)Mode.Client);
-            var selectedMode = Console.ReadLine();
-            var mode = Convert.ToInt32(selectedMode);
-
             Conversation conversation;
+            Int32 mode = 1; // init
+
+            try
+            {
+                Console.Write("Please enter {0} for Server mode, or {1} for client mode: ", (int)Mode.Server, (int)Mode.Client);
+                var selectedMode = Console.ReadLine();
+                mode = Convert.ToInt32(selectedMode);
+
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Error: please enter 1 or 0");
+            }
+
 
             switch (mode)
             {
@@ -34,7 +44,9 @@ namespace SimpleVpn
 
                     var server = new Server(port);
 
-                    Console.Write("Please enter a secret shared key:");
+
+
+                    Console.Write("Please enter the secret shared key:");
                     string sharedKey = Console.ReadLine();
                     conversation = server.Converse(sharedKey);
 
@@ -50,8 +62,9 @@ namespace SimpleVpn
                     var inputSvrPort = Console.ReadLine();
                     var svrPort = Convert.ToInt32(inputSvrPort);
 
+
                     var client = new Client(svrIpAddr, svrPort);
-                    Console.Write("Please enter a shared secret key:");
+                    Console.Write("Please enter the shared secret key:");
                     string sharedKey_ = Console.ReadLine();
                     conversation = client.Converse(sharedKey_);
 
@@ -68,7 +81,7 @@ namespace SimpleVpn
 
                 conversation.Speak(msg);
             }
-            
+
         }
     }
 }

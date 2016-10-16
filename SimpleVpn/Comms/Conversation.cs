@@ -22,11 +22,10 @@ namespace SimpleVpn.Comms
         }
 
         // changes the current key to the given key (Kab to DHkey)
-        public Cipher changeSecret(Cipher secret) {
-            return this._cipher = secret;
+        public void changeSecret(String secret) {
+            _cipher._key = secret;
         }
-
-
+        
         public void Listen(IAsyncResult ar)
         {
             SocketState state = (SocketState)ar.AsyncState;
@@ -41,7 +40,7 @@ namespace SimpleVpn.Comms
             if (state.LongTermBuffer.Last().Equals(Variables.EOF))
             {
                 var decrypted = _cipher.Decrypt(state.LongTermBuffer.Take(state.LongTermBuffer.Count-1)); //remove the EOF byte then decrypt
-                var msg = Encoding.ASCII.GetString(decrypted);
+                var msg = Encoding.ASCII.GetString(decrypted); // here is the message
                 Console.SetCursorPosition(0, Console.CursorTop);
                 Console.WriteLine(Variables.ReceivedMsg + msg);
                 Console.Write(Variables.SendMsg);

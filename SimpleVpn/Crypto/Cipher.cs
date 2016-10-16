@@ -9,8 +9,7 @@ namespace SimpleVpn.Crypto
 {
     public class Cipher
     {
-        // key field set and gets
-        private string _key { get; set; }
+        public string _key { get; set; }
 
         // constructor
         public Cipher(string key)
@@ -34,12 +33,6 @@ namespace SimpleVpn.Crypto
 
             // testing key
             CConsole.WriteLine("current key is: " + _key, ConsoleColor.Red);
-
-            /*//testing DH calculations
-            DiffieHellman x = new DiffieHellman();
-            BigInteger DH = x.hardComputeDH(3);
-            BigInteger DH = x.computeDH(5, 23, 23);
-            CConsole.Write("result:" + DH, ConsoleColor.Red);*/
 
             return res.ToArray();
         }
