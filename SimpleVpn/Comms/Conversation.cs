@@ -13,12 +13,18 @@ namespace SimpleVpn.Comms
     {
         private Socket _socket;
         private Cipher _cipher;
+        public String _message;
+        public bool _DHset;
+        public bool _secretSet;
 
         // creates a conversation
         public Conversation(Socket socket, Cipher secret)
         {
             _socket = socket;
             _cipher = secret;
+            _message = "";
+            _DHset = false;
+            _secretSet = false;
         }
 
         // changes the current key to the given key (Kab to DHkey)
@@ -31,7 +37,7 @@ namespace SimpleVpn.Comms
             SocketState state = (SocketState)ar.AsyncState;
             Socket client = state.WorkSocket;
 
-            int bytesRead = client.EndReceive(ar);
+            int bytesRead = client.EndReceive(ar); //end read
 
             if (bytesRead > 0)
             {
@@ -40,13 +46,21 @@ namespace SimpleVpn.Comms
             if (state.LongTermBuffer.Last().Equals(Variables.EOF))
             {
                 var decrypted = _cipher.Decrypt(state.LongTermBuffer.Take(state.LongTermBuffer.Count-1)); //remove the EOF byte then decrypt
-                var msg = Encoding.ASCII.GetString(decrypted); // here is the message
+                var msg = Encoding.ASCII.GetString(decrypted); 
+                _message = msg;
                 Console.SetCursorPosition(0, Console.CursorTop);
                 Console.WriteLine(Variables.ReceivedMsg + msg);
-                Console.Write(Variables.SendMsg);
+
+                // message prefixes
+                if (!_secretSet)
+                    Console.Write("Please enter your very own secret number:");
+                else if (_DHset)
+                    Console.Write(Variables.SendMsg);
+
                 state.LongTermBuffer.Clear();
             }
 
+            // new read
             client.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
                 new AsyncCallback(Listen), state);
 

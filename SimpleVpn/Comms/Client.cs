@@ -29,10 +29,10 @@ namespace SimpleVpn.Comms
         {
             _sender.Connect(_remoteEndpoint);
             Console.WriteLine("Socket connected to {0}", _sender.RemoteEndPoint.ToString());
-            
+
             // initiate conversation
             _conversation = new Conversation(_sender, new Cipher(sharedKey));
-            
+
             // connect
             var state = new SocketState { WorkSocket = _sender };
             _sender.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
@@ -57,13 +57,13 @@ namespace SimpleVpn.Comms
             DiffieHellman DH = new DiffieHellman();
 
             // generate g^a mod p
-            string a = "";  
+            string a = "";
             BigInteger DHa_val = 0;
             do
             {
                 try
                 {
-                    Console.Write("Please enter your very own secret NUMBER:");
+                    Console.Write("Please enter your very own secret number:");
                     a = Console.ReadLine();
                     DHa_val = DH.hardComputeSharedDH(Convert.ToInt64(a));
                     CConsole.WriteLine("The g^a mod p value is:" + DHa_val, ConsoleColor.Red); // red for testing
@@ -79,19 +79,23 @@ namespace SimpleVpn.Comms
             convos.Speak(DHa_val.ToString());
 
             // listen for DHb value from server (TODO)
-            BigInteger DHb_val = 21; // for testing 
-
-            // a = 2
-            // DHa_val = 7^2 % 23 = 3 
-            //--> DH_final = 21^2 % 23 = 4
+            String msg = "";
+            BigInteger DHb_val = 0;
+            do
+            {
+                msg = convos._message;
+                DHb_val = 3;// BigInteger.Parse(msg);
+            } while (msg.Equals(""));
             
-
+            CConsole.WriteLine("The g^b mod p value RECEIVED is:" + msg, ConsoleColor.Red); // red for testing
+            convos._secretSet = true;
             // calculate DH value
             BigInteger DH_final = DH.hardComputeFinalDH(DHb_val, Convert.ToInt64(a));
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Red); // red for testing
 
-            // set final DH as session key
+            // set final DH as session key for encrypt/decrypt
             convos.changeSecret(DH_final.ToString());
+            convos._DHset = true;
 
             return convos;
         }

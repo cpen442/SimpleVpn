@@ -19,7 +19,7 @@ namespace SimpleVpn
         {
 
             Conversation conversation;
-            Int32 mode = 1; // init
+            Int32 mode = 1; 
 
             try
             {

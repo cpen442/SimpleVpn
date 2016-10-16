@@ -25,10 +25,10 @@ namespace SimpleVpn.Crypto
             // TODO: make this work
             // format as E(input) in ascii
             var res = new List<byte>();
-            res.Add(0x45); // E
-            res.Add(0x28); // (
+            //res.Add(0x45); // E
+            //res.Add(0x28); // (
             res.AddRange(plaintext);
-            res.Add(0x29); // )
+            //res.Add(0x29); // )
             CConsole.WriteLine("Encrypted To: " + res.ByteArrToStr(), ConsoleColor.Yellow);
 
             // testing key
@@ -47,10 +47,10 @@ namespace SimpleVpn.Crypto
             // TODO: make this work
             // format as E(input) in ascii
             var res = new List<byte>();
-            res.Add(0x44); // D
-            res.Add(0x28); // (
+            //res.Add(0x44); // D
+            //res.Add(0x28); // (
             res.AddRange(cipherText);
-            res.Add(0x29); // )
+            //res.Add(0x29); // )
             CConsole.WriteLine("Decrypted To: " + res.ByteArrToStr(), ConsoleColor.Cyan);
 
             // testing
