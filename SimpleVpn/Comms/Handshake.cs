@@ -34,19 +34,21 @@ namespace SimpleVpn.Comms
             //wait for: ClntToSvr: "Client", Ra
             CConsole.Write("Waiting for Message: 'Client',Ra :" , ConsoleColor.Green);
             var rcvd = WaitMessageSync();
+            Console.WriteLine("");
+
             if (rcvd.First() != (byte)ModeByte.Client)
             {
                 throw new UnauthorizedAccessException("received message is not sent from client");
             }
             var RaBytes = rcvd.Skip(1);
             CConsole.WriteLine("I am challenged with Ra: " + RaBytes.ByteArrToStr(), ConsoleColor.Green);
-
+            Console.WriteLine("");
 
             var r = new Random();
             var RbBytes = RandomBytes(Variables.RaRbLength, r);
 
             CConsole.WriteLine("Challenging with Rb: " + RbBytes.ByteArrToStr(), ConsoleColor.Green);
-
+            Console.WriteLine("");
 
             DiffieHellman DH = new DiffieHellman();
 
@@ -54,7 +56,9 @@ namespace SimpleVpn.Comms
             var b = BigInteger.Abs(new BigInteger(RandomBytes(Variables.DHCoefficientLength, r)));
             var DHb_val = DH.hardComputeSharedDH(b);
             CConsole.WriteLine("My D-H coefficient chosen: " + b, ConsoleColor.Green);
+            Console.WriteLine("");
             CConsole.WriteLine("Sending D-H g^b mod p value: " + DHb_val, ConsoleColor.Green);
+            Console.WriteLine("");
 
             var enc = new List<byte>(); //corresponds to E("Svr", Ra, g^b modp, Kab)
 
@@ -68,10 +72,10 @@ namespace SimpleVpn.Comms
             m.AddRange(enc);
             // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
 CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleColor.Green);
-
             SendMessageSync(m);
+            Console.WriteLine("");
 
-// wait for: ClntToSvr: E("Client", Rb, g^a modp, Kab)
+            // wait for: ClntToSvr: E("Client", Rb, g^a modp, Kab)
             CConsole.Write("Waiting for Message: E('Client', Rb, g^a mod p ):", ConsoleColor.Green);
             rcvd = WaitMessageSync();
             //TODO: decrypte rcvd
@@ -88,10 +92,12 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             var DHa_val = new BigInteger(gamodp);
 
             CConsole.WriteLine("Received D-H g^b mod p value: " + DHa_val, ConsoleColor.Green);
+            Console.WriteLine("");
 
             // calculate DH value
             BigInteger DH_final = DH.hardComputeFinalDH(DHa_val, b);
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
+            Console.WriteLine("");
 
             return DH_final.ToString();
         }
@@ -108,6 +114,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             var RaBytes = RandomBytes(Variables.RaRbLength, r);
 
             CConsole.WriteLine("Challenging with Ra: " + RaBytes.ByteArrToStr(), ConsoleColor.Green);
+            Console.WriteLine("");
 
             var m = new List<byte>();
             m.Add((byte)ModeByte.Client);
@@ -115,14 +122,18 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
 
             CConsole.Write("Sending Message: 'Client',Ra:", ConsoleColor.Green);
             SendMessageSync(m);
+            Console.WriteLine("");
 
             // wait for: SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
             CConsole.Write("Waiting for Message: Rb, E('Server', Ra, g^b mod p ):", ConsoleColor.Green);
             var rcvd = WaitMessageSync();
+            Console.WriteLine("");
 
             //given above uint, expect first {Variables.RaRbLength} bytes as RB, rest as E("Svr",Ra, g^b modp, Kab)
             var Rb = rcvd.Take(Variables.RaRbLength).ToArray();
             CConsole.WriteLine("I am challenged with Rb: " + Rb.ByteArrToStr(), ConsoleColor.Green);
+            Console.WriteLine("");
+
             //TODO: decrypt rcvd with key as it should be encrypted. IT IS NOT ENCRYPTED NOW.
             var dec = rcvd.Skip(Variables.RaRbLength);
 
@@ -137,17 +148,22 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
                 throw new UnauthorizedAccessException("Password mismatch");
             }
             CConsole.WriteLine("Received Ra challenge response and passed: " + RaBytes.ByteArrToStr(), ConsoleColor.Green);
+            Console.WriteLine("");
 
             var gbmodp = dec.Skip(1 + Variables.RaRbLength).ToArray();
             BigInteger DHb_val = new BigInteger(gbmodp);
             CConsole.WriteLine("Received D-H g^b mod p value: " + DHb_val, ConsoleColor.Green);
+            Console.WriteLine("");
 
             DiffieHellman DH = new DiffieHellman();
             // generate g^a mod p
             var a = BigInteger.Abs(new BigInteger(RandomBytes(Variables.DHCoefficientLength, r)));
             var DHa_val = DH.hardComputeSharedDH(a);
             CConsole.WriteLine("My D-H coffefficient chosen: " + a , ConsoleColor.Green);
+            Console.WriteLine("");
+
             CConsole.WriteLine("Sending my D-H g^a mod p value : " + DHa_val, ConsoleColor.Green);
+            Console.WriteLine("");
 
             // ClntToSvr: E("Client", Rb, g^a modp, Kab)
             m.Clear();
@@ -158,11 +174,13 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
 
             CConsole.Write("Sending Message: E('Client', Rb, g^a mod p) :", ConsoleColor.Green);
             SendMessageSync(m);
+            Console.WriteLine("");
 
 
             // calculate DH value
             BigInteger DH_final = DH.hardComputeFinalDH(DHb_val, a);
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
+            Console.WriteLine("");
             return DH_final.ToString();
         }
 
