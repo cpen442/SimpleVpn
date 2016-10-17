@@ -52,7 +52,7 @@ namespace SimpleVpn
 
                 switch (mode)
                 {
-                case (int)Mode.Server:
+                    case (int)Mode.Server:
 
                         Console.Write("Please enter the server port: ");
                         var inputPort = Console.ReadLine();
@@ -68,7 +68,7 @@ namespace SimpleVpn
 
                         break;
 
-                case (int)Mode.Client:
+                    case (int)Mode.Client:
 
                         Console.Write("Server IP address: ");
                         var inputSvrIpAddr = Console.ReadLine();
@@ -100,7 +100,7 @@ namespace SimpleVpn
             }
             catch (UnauthorizedAccessException e)
             {
-                CConsole.WriteLine("Authentication Failed : " + e.Message, ConsoleColor.Red);
+                CConsole.WriteLine("Authentication Failed : " + e.Message, ConsoleColor.Red, forceVerbose: true);
             }
             catch (Exception e)
             {

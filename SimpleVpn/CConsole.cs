@@ -11,18 +11,18 @@ namespace SimpleVpn
         public static bool verbose = false;
         public static bool step = false;
 
-        public static void WriteLine(string msg, ConsoleColor color, ConsoleColor? bgcol = null, bool nostep = false)
+        public static void WriteLine(string msg, ConsoleColor color, ConsoleColor? bgcol = null, bool nostep = false, bool forceVerbose = false)
         {
-            if(!verbose) return;
+            if(!forceVerbose && !verbose) return;
             setcolor(color, bgcol);
             Console.WriteLine(msg);
             Console.ResetColor();
             if(!nostep) waitInput();
         }
 
-        public static void Write(string msg, ConsoleColor color, ConsoleColor? bgcol = null)
+        public static void Write(string msg, ConsoleColor color, ConsoleColor? bgcol = null, bool forceVerbose = false)
         {
-            if (!verbose) return;
+            if (!forceVerbose && !verbose) return;
             setcolor(color, bgcol);
             Console.Write(msg);
             Console.ResetColor();

@@ -83,7 +83,7 @@ namespace SimpleVpn.Comms
 
             if (rcvd.First() != (byte)ModeByte.Client)
             {
-                throw new UnauthorizedAccessException("received message did not come from client");
+                throw new UnauthorizedAccessException("received message did not come from client, Or the passwords do not match.");
             }
             //if Rb != received and decrypted rb
             if (!ByteArrMatches(rcvd.Skip(1).Take(Variables.RaRbLength), (RbBytes)))
@@ -100,6 +100,7 @@ namespace SimpleVpn.Comms
             BigInteger DH_final = DH.hardComputeFinalDH(DHa_val, b);
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
             Console.WriteLine("");
+            CConsole.WriteLine("Key is: " + DH_final.ToByteArray().ByteArrToStr(),ConsoleColor.Magenta);
 
             return DH_final.ToByteArray();
         }
@@ -140,7 +141,7 @@ namespace SimpleVpn.Comms
 
             if (dec.First() != (byte)ModeByte.Server)
             {
-                throw new UnauthorizedAccessException("Received message did not come from server");
+                throw new UnauthorizedAccessException("Received message did not come from server, Or the password do not match.");
             }
 
             //if Ra != received and decrypted ra
@@ -183,6 +184,8 @@ namespace SimpleVpn.Comms
             BigInteger DH_final = DH.hardComputeFinalDH(DHb_val, a);
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
             Console.WriteLine("");
+            CConsole.WriteLine("Key is: " + DH_final.ToByteArray().ByteArrToStr(), ConsoleColor.Magenta);
+
             return DH_final.ToByteArray();
         }
 

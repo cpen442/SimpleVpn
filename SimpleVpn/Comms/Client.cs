@@ -4,7 +4,6 @@ using System.Net.Sockets;
 using System.Text;
 using SimpleVpn.Constants;
 using SimpleVpn.Crypto;
-using SimpleVpn.Handshake;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using System.Numerics;
