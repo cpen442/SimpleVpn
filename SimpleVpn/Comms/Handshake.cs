@@ -43,8 +43,7 @@ namespace SimpleVpn.Comms
 
 
             var r = new Random();
-            var Rb = (uint)r.Next(Int32.MaxValue); //:TODO: does this need to be bigger? 1000bits?
-            var RbBytes = BitConverter.GetBytes(Rb);
+            var RbBytes = RandomBytes(Variables.RaRbLength, r);
 
             CConsole.WriteLine("Challenging with Rb: " + RbBytes.ByteArrToStr(), ConsoleColor.Green);
 
@@ -52,7 +51,7 @@ namespace SimpleVpn.Comms
             DiffieHellman DH = new DiffieHellman();
 
             // generate g^b mod p
-            var b = (uint)r.Next(Int32.MaxValue); //:TODO: does this need to be bigger? 1000bits?
+            var b = BigInteger.Abs(new BigInteger(RandomBytes(Variables.DHCoefficientLength, r)));
             var DHb_val = DH.hardComputeSharedDH(b);
             CConsole.WriteLine("My D-H coefficient chosen: " + b, ConsoleColor.Green);
             CConsole.WriteLine("Sending D-H g^b mod p value: " + DHb_val, ConsoleColor.Green);
@@ -91,7 +90,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             CConsole.WriteLine("Received D-H g^b mod p value: " + DHa_val, ConsoleColor.Green);
 
             // calculate DH value
-            BigInteger DH_final = DH.hardComputeFinalDH(DHa_val, Convert.ToInt64(b));
+            BigInteger DH_final = DH.hardComputeFinalDH(DHa_val, b);
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
 
             return DH_final.ToString();
@@ -106,8 +105,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
         {
             var r = new Random();
             // ClntToSvr: "Client", Ra
-            var Ra = (uint) r.Next(Int32.MaxValue); //:TODO: does this need to be bigger? 1000bits?
-            var RaBytes = BitConverter.GetBytes(Ra);
+            var RaBytes = RandomBytes(Variables.RaRbLength, r);
 
             CConsole.WriteLine("Challenging with Ra: " + RaBytes.ByteArrToStr(), ConsoleColor.Green);
 
@@ -146,7 +144,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
 
             DiffieHellman DH = new DiffieHellman();
             // generate g^a mod p
-            var a = (uint)r.Next(Int32.MaxValue); //:TODO: does this need to be bigger? 1000bits?
+            var a = BigInteger.Abs(new BigInteger(RandomBytes(Variables.DHCoefficientLength, r)));
             var DHa_val = DH.hardComputeSharedDH(a);
             CConsole.WriteLine("My D-H coffefficient chosen: " + a , ConsoleColor.Green);
             CConsole.WriteLine("Sending my D-H g^a mod p value : " + DHa_val, ConsoleColor.Green);
@@ -210,6 +208,18 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
                 }
             }
             return true;
+        }
+
+        private byte[] RandomBytes(int length, Random rand = null)
+        {
+            if (rand == null)
+            {
+                rand = new Random();
+            }
+            var buff = new byte[length];
+            rand.NextBytes(buff);
+
+            return buff;
         }
     }
 }
