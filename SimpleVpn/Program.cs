@@ -52,7 +52,7 @@ namespace SimpleVpn
 
                 switch (mode)
                 {
-                    case (int)Mode.Server:
+                case (int)Mode.Server:
 
                         Console.Write("Please enter the server port: ");
                         var inputPort = Console.ReadLine();
@@ -60,13 +60,15 @@ namespace SimpleVpn
 
                         var server = new Server(port);
 
+
+
                         Console.Write("Please enter the secret shared key:");
                         string sharedKey = Console.ReadLine();
                         conversation = server.Converse(sharedKey);
 
                         break;
 
-                    case (int)Mode.Client:
+                case (int)Mode.Client:
 
                         Console.Write("Server IP address: ");
                         var inputSvrIpAddr = Console.ReadLine();

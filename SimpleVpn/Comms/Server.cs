@@ -49,7 +49,7 @@ namespace SimpleVpn.Comms
             // connect
             handler.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
                 new AsyncCallback(_conversation.Listen), state);
-
+            
             return _conversation;
         }
     }

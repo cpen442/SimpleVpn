@@ -41,10 +41,10 @@ namespace SimpleVpn.Comms
             var state = new SocketState { WorkSocket = _sender };
             _sender.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
                 new AsyncCallback(_conversation.Listen), state);
-
+            
             return _conversation;
         }
-
+            
         public void Shutdown()
         {
             _sender.Shutdown(SocketShutdown.Both);
