@@ -47,10 +47,12 @@
     <Compile Include="CConsole.cs" />
     <Compile Include="Comms\Client.cs" />
     <Compile Include="Comms\Conversation.cs" />
+    <Compile Include="Comms\Handshake.cs" />
     <Compile Include="Comms\SocketState.cs" />
     <Compile Include="Constants\Constants.cs" />
     <Compile Include="Constants\Mode.cs" />
     <Compile Include="Crypto\Cipher.cs" />
+    <Compile Include="Crypto\DiffieHellman.cs" />
     <Compile Include="Handshake\Message.cs" />
     <Compile Include="Handshake\Payload.cs" />
     <Compile Include="Handshake\Sender.cs" />
