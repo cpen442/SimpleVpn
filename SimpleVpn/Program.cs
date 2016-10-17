@@ -72,7 +72,7 @@ namespace SimpleVpn
                         break;
 
                     default:
-                        throw new ArgumentException("Please enter a valid mode of opeartion.");
+                        throw new ArgumentException("Please enter a valid mode of operation.");
                 }
 
                 while (true)

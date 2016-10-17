@@ -15,11 +15,13 @@ namespace SimpleVpn.Comms
     {
         private Socket _socket;
         private byte[] key;
+        private Cipher cipher;
 
         public Handshake(Socket socket, string passwd)
         {
             this._socket = socket;
             this.key = getHashSha256(passwd);
+            cipher = new Cipher(key.ByteArrToStr());
             CConsole.WriteLine("Handshake Starting", ConsoleColor.Green);
             CConsole.WriteLine("Using Handshake Key (SHA256) of " + passwd + " : " + this.key.ByteArrToStr(), ConsoleColor.Green);
         }
@@ -65,7 +67,7 @@ namespace SimpleVpn.Comms
             enc.Add((byte)ModeByte.Server);
             enc.AddRange(RaBytes);
             enc.AddRange(DHb_val.ToByteArray());
-            //TODO: encrypt enc
+            enc = cipher.Encrypt(enc).ToList<byte>();
 
             var m = new List<byte>();
             m.AddRange(RbBytes);
@@ -77,8 +79,8 @@ namespace SimpleVpn.Comms
 
             // wait for: ClntToSvr: E("Client", Rb, g^a modp, Kab)
             CConsole.Write("Waiting for Message: E('Client', Rb, g^a mod p ):", ConsoleColor.Green);
-            rcvd = WaitMessageSync();
-            //TODO: decrypt rcvd
+            rcvd = cipher.Decrypt(WaitMessageSync());
+
             if (rcvd.First() != (byte)ModeByte.Client)
             {
                 throw new UnauthorizedAccessException("received message did not come from client");
@@ -134,8 +136,7 @@ namespace SimpleVpn.Comms
             CConsole.WriteLine("I am challenged with Rb: " + Rb.ByteArrToStr(), ConsoleColor.Green);
             Console.WriteLine("");
 
-            //TODO: decrypt rcvd with key as it should be encrypted. IT IS NOT ENCRYPTED NOW.
-            var dec = rcvd.Skip(Variables.RaRbLength);
+            var dec = cipher.Decrypt(rcvd.Skip(Variables.RaRbLength));
 
             if (dec.First() != (byte)ModeByte.Server)
             {
@@ -170,7 +171,8 @@ namespace SimpleVpn.Comms
             m.Add((byte)ModeByte.Client);
             m.AddRange(Rb);
             m.AddRange(DHa_val.ToByteArray());
-            //TODO: encrypt m with key
+            m = cipher.Encrypt(m).ToList<byte>();
+
 
             CConsole.Write("Sending Message: E('Client', Rb, g^a mod p) :", ConsoleColor.Green);
             SendMessageSync(m);
