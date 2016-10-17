@@ -30,12 +30,11 @@ namespace SimpleVpn.Crypto
 
             CConsole.WriteLine("Encrypted To: " + Encrypt<AesManaged>(plainText, sharedKey).ByteArrToStr(), ConsoleColor.Yellow);
 
+            //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
             return Encrypt<AesManaged>(plainText, sharedKey);
         }
 
-        //May use SymmetricAlgorithms other than AesManaged if desired
-        public byte[] Encrypt<T>(IEnumerable<byte> plainText, string password)
-                where T : SymmetricAlgorithm, new()
+        public byte[] Encrypt<T>(IEnumerable<byte> plainText, string password) where T : SymmetricAlgorithm, new()
         {
             byte[] valueBytes = plainText.ToArray<byte>();
             byte[] saltBytes = ASCIIEncoding.ASCII.GetBytes(salt);
@@ -73,10 +72,10 @@ namespace SimpleVpn.Crypto
 
             CConsole.WriteLine("Decrypted To: " + Decrypt<AesManaged>(cipherText, sharedKey).ByteArrToStr(), ConsoleColor.Cyan);
 
+            //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
             return Decrypt<AesManaged>(cipherText, sharedKey);
         }
 
-        //May use SymmetricAlgorithms other than AesManaged if desired
         public byte[] Decrypt<T>(IEnumerable<byte> cipherText, string password) where T : SymmetricAlgorithm, new()
         {
             byte[] valueBytes = cipherText.ToArray<byte>();
