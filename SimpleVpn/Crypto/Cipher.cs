@@ -11,13 +11,13 @@ namespace SimpleVpn.Crypto
     public class Cipher
     {
         private string sharedKey { get; set; } // shared secret key
-        private int keySize = 256; // use 256-bit AES key
-        private int iterations = 4; // iterations to run PasswordDeriveBytes for
 
         private string hash = "SHA1";
         private string salt = "cb4BTrRzIMKLAUfa"; // REPLACE WITH RANDOMLY GENERATED VALUE TO BE SHARED ALONG WITH D-H VALUES
         private string IV = "nK9ATSb1pMy25zuc"; // REPLACE WITH RANDOMLY GENERATED VALUE TO BE SHARED ALONG WITH D-H VALUES
         private int maxSaltIVLength = 32; // max length for randomly generated salt or IV values
+        private int keySize = 256; // use 256-bit AES key
+        private int iterations = 4; // iterations to run PasswordDeriveBytes for
 
         public Cipher(string key)
         {
