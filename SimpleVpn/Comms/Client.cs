@@ -17,42 +17,34 @@ namespace SimpleVpn.Comms
         private IPEndPoint _remoteEndpoint;
         private Conversation _conversation;
 
+        // creates a client
         public Client(IPAddress svrIpAddr, int svrPort)
         {
             _sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _remoteEndpoint = new IPEndPoint(svrIpAddr, svrPort);
         }
 
-        public Conversation Converse(string sharedKey)
+        // communicate between client and server using secret key
+        public Conversation Converse(string passwd)
         {
             _sender.Connect(_remoteEndpoint);
             Console.WriteLine("Socket connected to {0}", _sender.RemoteEndPoint.ToString());
 
-            var newKey = ShakeHands(sharedKey);
-            var cipher = new Cipher(newKey);
+            // shake hands
+            var hs = new Handshake(_sender,passwd);
+            var sessionKey = hs.AsClient();
 
-            _conversation = new Conversation(_sender, cipher);
+            // initiate conversation
+            _conversation = new Conversation(_sender, new Cipher(sessionKey));
 
+            // connect
             var state = new SocketState { WorkSocket = _sender };
             _sender.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
                 new AsyncCallback(_conversation.Listen), state);
-
+            
             return _conversation;
         }
-
-        private string ShakeHands(string sharedKey)
-        {
-            // ClntToSvr: "Client", Ra
-            // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
-            // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-            
-            var newKey = "newkey";
-
-            Console.WriteLine("Handshake complete, new key: {0}", newKey);
-
-            return newKey;
-        }
-
+        
         public void Shutdown()
         {
             _sender.Shutdown(SocketShutdown.Both);
