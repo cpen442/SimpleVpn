@@ -56,6 +56,8 @@ namespace SimpleVpn.Comms
 
         public void Speak(string message)
         {
+            if(string.IsNullOrEmpty(message))return;
+
             var bytes = Encoding.ASCII.GetBytes(message);
             var encrypted = _cipher.Encrypt(bytes);
             var sending = new List<byte>();

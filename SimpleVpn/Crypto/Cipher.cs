@@ -32,12 +32,13 @@ namespace SimpleVpn.Crypto
 
         public byte[] Encrypt(IEnumerable<byte> plainText)
         {
-            CConsole.WriteLine("Encrypting Bytes: " + plainText.ByteArrToStr(), ConsoleColor.Cyan);
-
-            CConsole.WriteLine("Encrypted To: " + Encrypt<AesManaged>(plainText, key).ByteArrToStr(), ConsoleColor.Yellow);
+            CConsole.WriteLine("Encrypting Bytes: " + plainText.ByteArrToStr(), ConsoleColor.Cyan, nostep: true);
 
             //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
-            return Encrypt<AesManaged>(plainText, key);
+            var res = Encrypt<AesManaged>(plainText, key);
+            CConsole.WriteLine("Encrypted To: " + res.ByteArrToStr(), ConsoleColor.Yellow, nostep: true);
+
+            return res;
         }
 
         public byte[] Encrypt<T>(IEnumerable<byte> plainText, byte[] password) where T : SymmetricAlgorithm, new()
@@ -72,12 +73,13 @@ namespace SimpleVpn.Crypto
         public byte[] Decrypt(IEnumerable<byte> cipherText)
         {
             Console.SetCursorPosition(0, Console.CursorTop);
-            CConsole.WriteLine("Decrypting Bytes: " + cipherText.ByteArrToStr(), ConsoleColor.Yellow);
-
-            CConsole.WriteLine("Decrypted To: " + Decrypt<AesManaged>(cipherText, key).ByteArrToStr(), ConsoleColor.Cyan);
+            CConsole.WriteLine("Decrypting Bytes: " + cipherText.ByteArrToStr(), ConsoleColor.Yellow, nostep: true);
 
             //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
-            return Decrypt<AesManaged>(cipherText, key);
+            var res = Decrypt<AesManaged>(cipherText, key);
+            CConsole.WriteLine("Decrypted To: " + res.ByteArrToStr(), ConsoleColor.Cyan, nostep: true);
+
+            return res;
         }
 
         public byte[] Decrypt<T>(IEnumerable<byte> cipherText, byte[] password) where T : SymmetricAlgorithm, new()

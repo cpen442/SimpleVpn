@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using SimpleVpn.Comms;
 using SimpleVpn.Constants;
 using System.Numerics;
+using System.Windows.Forms;
 
 namespace SimpleVpn
 {
@@ -18,23 +19,37 @@ namespace SimpleVpn
         static void Main(string[] args)
         {
 
-            Conversation conversation;
-            Int32 mode = 1;
-
             try
             {
-                Console.Write("Please enter {0} for Server mode, or {1} for client mode: ", (int)Mode.Server, (int)Mode.Client);
-                var selectedMode = Console.ReadLine();
-                mode = Convert.ToInt32(selectedMode);
+                Conversation conversation;
+                Int32 mode = 1;
 
-            }
-            catch (FormatException)
-            {
-                Console.WriteLine("Error: please enter 1 or 0");
-            }
+                try
+                {
+                    Console.Write("Please enter {0} for Server mode, or {1} for client mode: ", (int)Mode.Server, (int)Mode.Client);
+                    var selectedMode = Console.ReadLine();
+                    mode = Convert.ToInt32(selectedMode);
 
-            try
-            {
+                }
+                catch (FormatException)
+                {
+                    throw new Exception("Error: please enter 1 or 0");
+                }
+
+                Console.Write("do you want to enable VERBOSE mode?: ");
+                SendKeys.SendWait("yes"); //hello text will be editable :)
+                var vb = Console.ReadLine();
+                if (vb.ToLower().StartsWith("y"))
+                {
+                    CConsole.verbose = true;
+
+                    Console.Write("do you want to enable SINGLE STEP mode?: ");
+                    SendKeys.SendWait("yes"); //hello text will be editable :)
+                    var st = Console.ReadLine();
+                    if (st.ToLower().StartsWith("y")) CConsole.step = true;
+                }
+
+
                 switch (mode)
                 {
                     case (int)Mode.Server:

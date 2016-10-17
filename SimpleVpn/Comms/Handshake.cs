@@ -22,7 +22,7 @@ namespace SimpleVpn.Comms
             this._socket = socket;
             this.key = getHashSha256(passwd);
             cipher = new Cipher(key);
-            CConsole.WriteLine("Handshake Starting", ConsoleColor.Green);
+            CConsole.WriteLine("Handshake Starting", ConsoleColor.Green, nostep: true);
             CConsole.WriteLine("Using Handshake Key (SHA256) of " + passwd + " : " + this.key.ByteArrToStr(), ConsoleColor.Green);
         }
 
@@ -128,7 +128,7 @@ namespace SimpleVpn.Comms
 
             // wait for: SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
             CConsole.Write("Waiting for Message: Rb, E('Server', Ra, g^b mod p ):", ConsoleColor.Green);
-            var rcvd = WaitMessageSync();
+            var rcvd = WaitMessageSync().ToList();
             Console.WriteLine("");
 
             //given above uint, expect first {Variables.RaRbLength} bytes as RB, rest as E("Svr",Ra, g^b modp, Kab)
