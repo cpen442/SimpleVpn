@@ -17,6 +17,7 @@ namespace SimpleVpn.Crypto
         private string hash = "SHA1";
         private string salt = "cb4BTrRzIMKLAUfa"; // REPLACE WITH RANDOMLY GENERATED VALUE TO BE SHARED ALONG WITH D-H VALUES
         private string IV = "nK9ATSb1pMy25zuc"; // REPLACE WITH RANDOMLY GENERATED VALUE TO BE SHARED ALONG WITH D-H VALUES
+        private int maxSaltIVLength = 32; // max length for randomly generated salt or IV values
 
         public Cipher(string key)
         {
@@ -32,6 +33,7 @@ namespace SimpleVpn.Crypto
             return Encrypt<AesManaged>(plainText, sharedKey);
         }
 
+        //May use SymmetricAlgorithms other than AesManaged if desired
         public byte[] Encrypt<T>(IEnumerable<byte> plainText, string password)
                 where T : SymmetricAlgorithm, new()
         {
@@ -74,6 +76,7 @@ namespace SimpleVpn.Crypto
             return Decrypt<AesManaged>(cipherText, sharedKey);
         }
 
+        //May use SymmetricAlgorithms other than AesManaged if desired
         public byte[] Decrypt<T>(IEnumerable<byte> cipherText, string password) where T : SymmetricAlgorithm, new()
         {
             byte[] valueBytes = cipherText.ToArray<byte>();
@@ -114,35 +117,17 @@ namespace SimpleVpn.Crypto
             return decrypted;
         }
 
-        /*public byte[] Encrypt(IEnumerable<byte> cipherText)
+        //Helper Method to generate a random value to be used for salt or initialization vector (IV)
+        private string GenerateRandomCryptoValue()
         {
-            CConsole.WriteLine("Encrypting Bytes: " + cipherText.ByteArrToStr(), ConsoleColor.Cyan);
-            // TODO: make this work
-            // format as E(input) in ascii
-            var res = new List<byte>();
-            res.Add(0x45); // E
-            res.Add(0x28); // (
-            res.AddRange(cipherText);
-            res.Add(0x29); // )
-            CConsole.WriteLine("Encrypted To: " + res.ByteArrToStr(), ConsoleColor.Yellow);
-            return res.ToArray();
+            byte[] result = new byte[maxSaltIVLength];
+
+            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetNonZeroBytes(result);
+            }
+
+            return result.ByteArrToStr();
         }
-
-        public byte[] Decrypt(IEnumerable<byte> cipherText)
-        {
-            Console.SetCursorPosition(0, Console.CursorTop);
-            CConsole.WriteLine("Decrypting Bytes: " + cipherText.ByteArrToStr(), ConsoleColor.Yellow);
-
-            // TODO: make this work
-            // format as E(input) in ascii
-            var res = new List<byte>();
-            res.Add(0x44); // D
-            res.Add(0x28); // (
-            res.AddRange(cipherText);
-            res.Add(0x29); // )
-            CConsole.WriteLine("Decrypted To: " + res.ByteArrToStr(), ConsoleColor.Cyan);
-
-            return res.ToArray();
-        }*/
     }
 }
