@@ -19,7 +19,7 @@ namespace SimpleVpn
         {
 
             Conversation conversation;
-            Int32 mode = 1; 
+            Int32 mode = 1;
 
             try
             {
@@ -33,53 +33,72 @@ namespace SimpleVpn
                 Console.WriteLine("Error: please enter 1 or 0");
             }
 
-
-            switch (mode)
+            try
             {
-                case (int)Mode.Server:
+                switch (mode)
+                {
+                    case (int) Mode.Server:
 
-                    Console.Write("Please enter the server port: ");
-                    var inputPort = Console.ReadLine();
-                    var port = Convert.ToInt32(inputPort);
+                        Console.Write("Please enter the server port: ");
+                        var inputPort = Console.ReadLine();
+                        var port = Convert.ToInt32(inputPort);
 
-                    var server = new Server(port);
-
-
-
-                    Console.Write("Please enter the secret shared key:");
-                    string sharedKey = Console.ReadLine();
-                    conversation = server.Converse(sharedKey);
-
-                    break;
-
-                case (int)Mode.Client:
-
-                    Console.Write("Server IP address: ");
-                    var inputSvrIpAddr = Console.ReadLine();
-                    var svrIpAddr = IPAddress.Parse(inputSvrIpAddr);
-
-                    Console.Write("Server port: ");
-                    var inputSvrPort = Console.ReadLine();
-                    var svrPort = Convert.ToInt32(inputSvrPort);
+                        var server = new Server(port);
 
 
-                    var client = new Client(svrIpAddr, svrPort);
-                    Console.Write("Please enter the shared secret key:");
-                    string sharedKey_ = Console.ReadLine();
-                    conversation = client.Converse(sharedKey_);
 
-                    break;
+                        Console.Write("Please enter the secret shared key:");
+                        string sharedKey = Console.ReadLine();
+                        conversation = server.Converse(sharedKey);
 
-                default:
-                    throw new ArgumentException("Please enter a valid mode of opeartion.");
+                        break;
+
+                    case (int) Mode.Client:
+
+                        Console.Write("Server IP address: ");
+                        var inputSvrIpAddr = Console.ReadLine();
+                        var svrIpAddr = IPAddress.Parse(inputSvrIpAddr);
+
+                        Console.Write("Server port: ");
+                        var inputSvrPort = Console.ReadLine();
+                        var svrPort = Convert.ToInt32(inputSvrPort);
+
+
+                        var client = new Client(svrIpAddr, svrPort);
+                        Console.Write("Please enter the shared secret key:");
+                        string sharedKey_ = Console.ReadLine();
+                        conversation = client.Converse(sharedKey_);
+
+                        break;
+
+                    default:
+                        throw new ArgumentException("Please enter a valid mode of opeartion.");
+                }
+
+                while (true)
+                {
+                    Console.Write(Variables.SendMsg);
+                    var msg = Console.ReadLine();
+
+                    conversation.Speak(msg);
+                }
             }
-
-            while (true)
+            catch (UnauthorizedAccessException e)
             {
-                Console.Write(Variables.SendMsg);
-                var msg = Console.ReadLine();
+                CConsole.WriteLine("Authentication Failed : " + e.Message, ConsoleColor.Red);
+            }
+            catch (Exception e)
+            {
+                CConsole.WriteLine(e.Message, ConsoleColor.Red);
+            }
+            finally
+            {
+                Console.WriteLine("Press any key to exit.");
 
-                conversation.Speak(msg);
+                while (!Console.KeyAvailable)
+                {
+                }
+                Environment.Exit(-1);
             }
 
         }

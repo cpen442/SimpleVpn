@@ -26,7 +26,7 @@ namespace SimpleVpn.Comms
             Console.WriteLine("Server running at: {0}:{1}", ipAddress, port);
         }
 
-        public Conversation Converse(string sharedKey)
+        public Conversation Converse(string passwd)
         {
             int backlog = 10;
             _listener.Listen(backlog);
@@ -35,8 +35,12 @@ namespace SimpleVpn.Comms
             var handler = _listener.Accept();
             Console.WriteLine("Connected to client: {0}", handler.RemoteEndPoint.ToString());
 
+            // shake hands
+            var hs = new Handshake(handler, passwd);
+            var sessionKey = hs.AsServer();
+
             // initiate conversation
-            _conversation = new Conversation(handler, new Cipher(sharedKey));
+            _conversation = new Conversation(handler, new Cipher(sessionKey));
 
             // create socket
             var state = new SocketState();
@@ -45,67 +49,8 @@ namespace SimpleVpn.Comms
             // connect
             handler.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
                 new AsyncCallback(_conversation.Listen), state);
-
-            // pass the conversation to handshake
-            _conversation = ShakeHands(sharedKey, _conversation);
-
-            return _conversation;
-        }
-
-        /* PROTOCOL IS AS FOLLOWS: */
-        // ClntToSvr: "Client", Ra
-        // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
-        // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-        private Conversation ShakeHands(string sharedKey, Conversation convos)
-        {
-            //TODO: mutual authentication
-
-            DiffieHellman DH = new DiffieHellman();
-
-            // generate g^b mod p
-            string b = "";
-            BigInteger DHb_val = 0;
-            do
-            {
-                try
-                {
-                    Console.Write("Please enter your very own secret number: ");
-                    b = Console.ReadLine();
-                    DHb_val = DH.hardComputeSharedDH(Convert.ToInt64(b));
-                    CConsole.WriteLine("The g^b mod p value SENT is: " + DHb_val, ConsoleColor.Red); //red for testing
-                }
-                catch (FormatException)
-                {
-                    Console.WriteLine("Error: enter a INTEGER number!");
-                }
-
-            } while (DHb_val == 0);
-
-            // send this DHb value 
-            convos.Speak(DHb_val.ToString());
             
-            // listen for DHa value from client (TODO)
-            String msg = "";
-            BigInteger DHa_val = 0;
-            do
-            {
-                msg = convos._message;
-            } while (msg.Equals(""));
-
-            CConsole.WriteLine("The g^a mod p value RECEIVED is: " + msg, ConsoleColor.Red); // red for testing
-            DHa_val = BigInteger.Parse(msg);//new BigInteger(Encoding.UTF8.GetBytes(msg));
-            convos._secretSet = true;
-            CConsole.WriteLine("The g^a mod p value CONVERTED from UTF8 is: " + DHa_val, ConsoleColor.Red); // red for testing
-
-            // calculate DH value
-            BigInteger DH_final = DH.hardComputeFinalDH(DHa_val, Convert.ToInt64(b));
-            CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Red); // red for testing
-
-            // set final DH as session key for encrypt/decrypt
-            convos.changeSecret(DH_final.ToString());
-            convos._DHset = true;
-
-            return convos;
+            return _conversation;
         }
     }
 }
