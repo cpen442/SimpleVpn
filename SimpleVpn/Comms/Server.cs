@@ -13,6 +13,7 @@ namespace SimpleVpn.Comms
         private Socket _listener;
         private Conversation _conversation;
 
+        // creates a server
         public Server(int port)
         {
             var ipHostInfo = Dns.Resolve(Dns.GetHostName());
@@ -25,7 +26,7 @@ namespace SimpleVpn.Comms
             Console.WriteLine("Server running at: {0}:{1}", ipAddress, port);
         }
 
-        public Conversation Converse(string sharedKey)
+        public Conversation Converse(string passwd)
         {
             int backlog = 10;
             _listener.Listen(backlog);
@@ -34,31 +35,22 @@ namespace SimpleVpn.Comms
             var handler = _listener.Accept();
             Console.WriteLine("Connected to client: {0}", handler.RemoteEndPoint.ToString());
 
-            var newKey = ShakeHands(sharedKey);
-            var cipher = new Cipher(newKey);
+            // shake hands
+            var hs = new Handshake(handler, passwd);
+            var sessionKey = hs.AsServer();
 
-            _conversation = new Conversation(handler, cipher);
+            // initiate conversation
+            _conversation = new Conversation(handler, new Cipher(sessionKey));
 
+            // create socket
             var state = new SocketState();
             state.WorkSocket = handler;
 
+            // connect
             handler.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
                 new AsyncCallback(_conversation.Listen), state);
 
             return _conversation;
-        }
-
-        private string ShakeHands(string sharedKey)
-        {
-            // ClntToSvr: "Client", Ra
-            // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
-            // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-
-            var newKey = "newkey";
-
-            Console.WriteLine("Handshake complete, new key: {0}", newKey);
-
-            return newKey;
         }
     }
 }

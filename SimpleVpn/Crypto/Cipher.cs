@@ -10,28 +10,31 @@ namespace SimpleVpn.Crypto
     //Handles Encrypting and Decrypting messages using AES-256
     public class Cipher
     {
-        private string sharedKey { get; set; } // shared secret key
+        private string key { get; set; } // shared secret session key obtained from Diffie-Hellman
 
         private string hash = "SHA1";
-        private string salt = "cb4BTrRzIMKLAUfa"; // REPLACE WITH RANDOMLY GENERATED VALUE TO BE SHARED ALONG WITH D-H VALUES
-        private string IV = "nK9ATSb1pMy25zuc"; // REPLACE WITH RANDOMLY GENERATED VALUE TO BE SHARED ALONG WITH D-H VALUES
-        private int maxSaltIVLength = 32; // max length for randomly generated salt or IV values
+        private string salt;
+        private string IV;
+        private int maxSaltIVLength = 16; // max length for randomly generated salt or IV values
         private int keySize = 256; // use 256-bit AES key
         private int iterations = 4; // iterations to run PasswordDeriveBytes for
 
         public Cipher(string key)
         {
-            sharedKey = key;
+            IV = key.Substring(0, maxSaltIVLength); //slice off first 16 bytes to be used for random IV for AES
+            salt = key.Substring(maxSaltIVLength, maxSaltIVLength); //slice off next 16 bytes to be used for random salt for AES
+
+            this.key = key.Substring(maxSaltIVLength * 2); //use remainder as shared secret session key
         }
 
         public byte[] Encrypt(IEnumerable<byte> plainText)
         {
             CConsole.WriteLine("Encrypting Bytes: " + plainText.ByteArrToStr(), ConsoleColor.Cyan);
 
-            CConsole.WriteLine("Encrypted To: " + Encrypt<AesManaged>(plainText, sharedKey).ByteArrToStr(), ConsoleColor.Yellow);
+            CConsole.WriteLine("Encrypted To: " + Encrypt<AesManaged>(plainText, key).ByteArrToStr(), ConsoleColor.Yellow);
 
             //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
-            return Encrypt<AesManaged>(plainText, sharedKey);
+            return Encrypt<AesManaged>(plainText, key);
         }
 
         public byte[] Encrypt<T>(IEnumerable<byte> plainText, string password) where T : SymmetricAlgorithm, new()
@@ -70,10 +73,10 @@ namespace SimpleVpn.Crypto
             Console.SetCursorPosition(0, Console.CursorTop);
             CConsole.WriteLine("Decrypting Bytes: " + cipherText.ByteArrToStr(), ConsoleColor.Yellow);
 
-            CConsole.WriteLine("Decrypted To: " + Decrypt<AesManaged>(cipherText, sharedKey).ByteArrToStr(), ConsoleColor.Cyan);
+            CConsole.WriteLine("Decrypted To: " + Decrypt<AesManaged>(cipherText, key).ByteArrToStr(), ConsoleColor.Cyan);
 
             //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
-            return Decrypt<AesManaged>(cipherText, sharedKey);
+            return Decrypt<AesManaged>(cipherText, key);
         }
 
         public byte[] Decrypt<T>(IEnumerable<byte> cipherText, string password) where T : SymmetricAlgorithm, new()
