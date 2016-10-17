@@ -45,8 +45,6 @@ namespace SimpleVpn
 
                         var server = new Server(port);
 
-
-
                         Console.Write("Please enter the secret shared key:");
                         string sharedKey = Console.ReadLine();
                         conversation = server.Converse(sharedKey);

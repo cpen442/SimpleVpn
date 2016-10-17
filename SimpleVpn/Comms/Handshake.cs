@@ -21,7 +21,7 @@ namespace SimpleVpn.Comms
         {
             this._socket = socket;
             this.key = getHashSha256(passwd);
-            cipher = new Cipher(key.ByteArrToStr());
+            cipher = new Cipher(key);
             CConsole.WriteLine("Handshake Starting", ConsoleColor.Green);
             CConsole.WriteLine("Using Handshake Key (SHA256) of " + passwd + " : " + this.key.ByteArrToStr(), ConsoleColor.Green);
         }
@@ -31,7 +31,7 @@ namespace SimpleVpn.Comms
         // ClntToSvr: "Client", Ra
         // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
         // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-        public string AsServer()
+        public byte[] AsServer()
         {
             //wait for: ClntToSvr: "Client", Ra
             CConsole.Write("Waiting for Message: 'Client',Ra :", ConsoleColor.Green);
@@ -101,7 +101,7 @@ namespace SimpleVpn.Comms
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
             Console.WriteLine("");
 
-            return DH_final.ToString();
+            return DH_final.ToByteArray();
         }
 
 
@@ -109,7 +109,7 @@ namespace SimpleVpn.Comms
         // ClntToSvr: "Client", Ra
         // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
         // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-        public string AsClient()
+        public byte[] AsClient()
         {
             var r = new Random();
             // ClntToSvr: "Client", Ra
@@ -183,7 +183,7 @@ namespace SimpleVpn.Comms
             BigInteger DH_final = DH.hardComputeFinalDH(DHb_val, a);
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
             Console.WriteLine("");
-            return DH_final.ToString();
+            return DH_final.ToByteArray();
         }
 
         private void SendMessageSync(IEnumerable<byte> m)

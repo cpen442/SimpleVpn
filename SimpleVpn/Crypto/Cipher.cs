@@ -10,21 +10,24 @@ namespace SimpleVpn.Crypto
     //Handles Encrypting and Decrypting messages using AES-256
     public class Cipher
     {
-        private string key { get; set; } // shared secret session key obtained from Diffie-Hellman
+        private byte[] key { get; set; } // shared secret session key obtained from Diffie-Hellman
 
         private string hash = "SHA1";
-        private string salt;
-        private string IV;
+        private byte[] IV;
+        private byte[] salt;
         private int maxSaltIVLength = 16; // max length for randomly generated salt or IV values
         private int keySize = 256; // use 256-bit AES key
         private int iterations = 4; // iterations to run PasswordDeriveBytes for
 
-        public Cipher(string key)
+        public Cipher(byte[] key)
         {
-            IV = key.Substring(0, maxSaltIVLength); //slice off first 16 bytes to be used for random IV for AES
-            salt = key.Substring(maxSaltIVLength, maxSaltIVLength); //slice off next 16 bytes to be used for random salt for AES
+            IV = new byte[maxSaltIVLength];
+            salt = new byte[maxSaltIVLength];
+            this.key = new byte[keySize];
 
-            this.key = key.Substring(maxSaltIVLength * 2); //use remainder as shared secret session key
+            Buffer.BlockCopy(key, 0, IV, 0, maxSaltIVLength); //slice off first 16 bytes to be used for random IV for AES
+            Buffer.BlockCopy(key, maxSaltIVLength, salt, 0, maxSaltIVLength); //slice off next 16 bytes to be used for random salt for AES
+            Buffer.BlockCopy(key, maxSaltIVLength * 2, this.key, 0, Buffer.ByteLength(key) - (maxSaltIVLength * 2));  // use remainder for session key     
         }
 
         public byte[] Encrypt(IEnumerable<byte> plainText)
@@ -37,27 +40,25 @@ namespace SimpleVpn.Crypto
             return Encrypt<AesManaged>(plainText, key);
         }
 
-        public byte[] Encrypt<T>(IEnumerable<byte> plainText, string password) where T : SymmetricAlgorithm, new()
+        public byte[] Encrypt<T>(IEnumerable<byte> plainText, byte[] password) where T : SymmetricAlgorithm, new()
         {
-            byte[] valueBytes = plainText.ToArray<byte>();
-            byte[] saltBytes = ASCIIEncoding.ASCII.GetBytes(salt);
-            byte[] vectorBytes = ASCIIEncoding.ASCII.GetBytes(IV);
+            byte[] plainTextBytes = plainText.ToArray<byte>();
             byte[] encrypted;
 
             using (T cipher = new T())
             {
-                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, saltBytes, hash, iterations);
+                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, hash, iterations);
                 byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
 
                 cipher.Mode = CipherMode.CBC;
 
-                using (ICryptoTransform encryptor = cipher.CreateEncryptor(keyBytes, vectorBytes))
+                using (ICryptoTransform encryptor = cipher.CreateEncryptor(keyBytes, IV))
                 {
                     using (MemoryStream to = new MemoryStream())
                     {
                         using (CryptoStream writer = new CryptoStream(to, encryptor, CryptoStreamMode.Write))
                         {
-                            writer.Write(valueBytes, 0, valueBytes.Length);
+                            writer.Write(plainTextBytes, 0, plainTextBytes.Length);
                             writer.FlushFinalBlock();
                             encrypted = to.ToArray();
                         }
@@ -79,29 +80,27 @@ namespace SimpleVpn.Crypto
             return Decrypt<AesManaged>(cipherText, key);
         }
 
-        public byte[] Decrypt<T>(IEnumerable<byte> cipherText, string password) where T : SymmetricAlgorithm, new()
+        public byte[] Decrypt<T>(IEnumerable<byte> cipherText, byte[] password) where T : SymmetricAlgorithm, new()
         {
-            byte[] valueBytes = cipherText.ToArray<byte>();
-            byte[] saltBytes = ASCIIEncoding.ASCII.GetBytes(salt);
-            byte[] vectorBytes = ASCIIEncoding.ASCII.GetBytes(IV);
+            byte[] cipherTextBytes = cipherText.ToArray<byte>();
             byte[] decrypted;
 
             using (T cipher = new T())
             {
-                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, saltBytes, hash, iterations);
+                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, hash, iterations);
                 byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
 
                 cipher.Mode = CipherMode.CBC;
 
                 try
                 {
-                    using (ICryptoTransform decryptor = cipher.CreateDecryptor(keyBytes, vectorBytes))
+                    using (ICryptoTransform decryptor = cipher.CreateDecryptor(keyBytes, IV))
                     {
-                        using (MemoryStream from = new MemoryStream(valueBytes))
+                        using (MemoryStream from = new MemoryStream(cipherTextBytes))
                         {
                             using (CryptoStream reader = new CryptoStream(from, decryptor, CryptoStreamMode.Read))
                             {
-                                decrypted = new byte[valueBytes.Length];
+                                decrypted = new byte[cipherTextBytes.Length];
                                 reader.Read(decrypted, 0, decrypted.Length);
                             }
                         }
@@ -117,19 +116,6 @@ namespace SimpleVpn.Crypto
             }
 
             return decrypted;
-        }
-
-        //Helper Method to generate a random value to be used for salt or initialization vector (IV)
-        private string GenerateRandomCryptoValue()
-        {
-            byte[] result = new byte[maxSaltIVLength];
-
-            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
-            {
-                rng.GetNonZeroBytes(result);
-            }
-
-            return result.ByteArrToStr();
         }
     }
 }
