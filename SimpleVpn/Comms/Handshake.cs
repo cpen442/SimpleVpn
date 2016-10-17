@@ -15,12 +15,14 @@ namespace SimpleVpn.Comms
     {
         private Socket _socket;
         private byte[] key;
+        private Cipher cipher;
 
         public Handshake(Socket socket, string passwd)
         {
             this._socket = socket;
             this.key = getHashSha256(passwd);
-            CConsole.WriteLine("Handshake Starting", ConsoleColor.Green);
+            cipher = new Cipher(key);
+            CConsole.WriteLine("Handshake Starting", ConsoleColor.Green, nostep: true);
             CConsole.WriteLine("Using Handshake Key (SHA256) of " + passwd + " : " + this.key.ByteArrToStr(), ConsoleColor.Green);
         }
 
@@ -29,10 +31,10 @@ namespace SimpleVpn.Comms
         // ClntToSvr: "Client", Ra
         // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
         // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-        public string AsServer()
+        public byte[] AsServer()
         {
             //wait for: ClntToSvr: "Client", Ra
-            CConsole.Write("Waiting for Message: 'Client',Ra :" , ConsoleColor.Green);
+            CConsole.Write("Waiting for Message: 'Client',Ra :", ConsoleColor.Green);
             var rcvd = WaitMessageSync();
             Console.WriteLine("");
 
@@ -65,26 +67,26 @@ namespace SimpleVpn.Comms
             enc.Add((byte)ModeByte.Server);
             enc.AddRange(RaBytes);
             enc.AddRange(DHb_val.ToByteArray());
-            //TODO: encrypt enc
+            enc = cipher.Encrypt(enc).ToList<byte>();
 
             var m = new List<byte>();
             m.AddRange(RbBytes);
             m.AddRange(enc);
             // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
-CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleColor.Green);
+            CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleColor.Green);
             SendMessageSync(m);
             Console.WriteLine("");
 
             // wait for: ClntToSvr: E("Client", Rb, g^a modp, Kab)
             CConsole.Write("Waiting for Message: E('Client', Rb, g^a mod p ):", ConsoleColor.Green);
-            rcvd = WaitMessageSync();
-            //TODO: decrypte rcvd
+            rcvd = cipher.Decrypt(WaitMessageSync());
+
             if (rcvd.First() != (byte)ModeByte.Client)
             {
                 throw new UnauthorizedAccessException("received message did not come from client");
             }
             //if Rb != received and decrypted rb
-            if (!ByteArrMatches(rcvd.Skip(1).Take(Variables.RaRbLength),(RbBytes)))
+            if (!ByteArrMatches(rcvd.Skip(1).Take(Variables.RaRbLength), (RbBytes)))
             {
                 throw new UnauthorizedAccessException("Password mismatch");
             }
@@ -99,7 +101,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
             Console.WriteLine("");
 
-            return DH_final.ToString();
+            return DH_final.ToByteArray();
         }
 
 
@@ -107,7 +109,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
         // ClntToSvr: "Client", Ra
         // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
         // ClntToSvr: E("Client", Rb, g^a modp, Kab)
-        public string AsClient()
+        public byte[] AsClient()
         {
             var r = new Random();
             // ClntToSvr: "Client", Ra
@@ -126,7 +128,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
 
             // wait for: SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
             CConsole.Write("Waiting for Message: Rb, E('Server', Ra, g^b mod p ):", ConsoleColor.Green);
-            var rcvd = WaitMessageSync();
+            var rcvd = WaitMessageSync().ToList();
             Console.WriteLine("");
 
             //given above uint, expect first {Variables.RaRbLength} bytes as RB, rest as E("Svr",Ra, g^b modp, Kab)
@@ -134,8 +136,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             CConsole.WriteLine("I am challenged with Rb: " + Rb.ByteArrToStr(), ConsoleColor.Green);
             Console.WriteLine("");
 
-            //TODO: decrypt rcvd with key as it should be encrypted. IT IS NOT ENCRYPTED NOW.
-            var dec = rcvd.Skip(Variables.RaRbLength);
+            var dec = cipher.Decrypt(rcvd.Skip(Variables.RaRbLength));
 
             if (dec.First() != (byte)ModeByte.Server)
             {
@@ -143,7 +144,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             }
 
             //if Ra != received and decrypted ra
-            if (!ByteArrMatches(dec.Skip(1).Take(Variables.RaRbLength),RaBytes))
+            if (!ByteArrMatches(dec.Skip(1).Take(Variables.RaRbLength), RaBytes))
             {
                 throw new UnauthorizedAccessException("Password mismatch");
             }
@@ -159,7 +160,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             // generate g^a mod p
             var a = BigInteger.Abs(new BigInteger(RandomBytes(Variables.DHCoefficientLength, r)));
             var DHa_val = DH.hardComputeSharedDH(a);
-            CConsole.WriteLine("My D-H coffefficient chosen: " + a , ConsoleColor.Green);
+            CConsole.WriteLine("My D-H coffefficient chosen: " + a, ConsoleColor.Green);
             Console.WriteLine("");
 
             CConsole.WriteLine("Sending my D-H g^a mod p value : " + DHa_val, ConsoleColor.Green);
@@ -170,7 +171,8 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             m.Add((byte)ModeByte.Client);
             m.AddRange(Rb);
             m.AddRange(DHa_val.ToByteArray());
-            //TODO: encrypt m with key
+            m = cipher.Encrypt(m).ToList<byte>();
+
 
             CConsole.Write("Sending Message: E('Client', Rb, g^a mod p) :", ConsoleColor.Green);
             SendMessageSync(m);
@@ -181,7 +183,7 @@ CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleCol
             BigInteger DH_final = DH.hardComputeFinalDH(DHb_val, a);
             CConsole.WriteLine("The g^ab mod p value is:" + DH_final, ConsoleColor.Green);
             Console.WriteLine("");
-            return DH_final.ToString();
+            return DH_final.ToByteArray();
         }
 
         private void SendMessageSync(IEnumerable<byte> m)

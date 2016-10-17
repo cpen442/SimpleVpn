@@ -31,7 +31,7 @@ namespace SimpleVpn.Comms
             Console.WriteLine("Socket connected to {0}", _sender.RemoteEndPoint.ToString());
 
             // shake hands
-            var hs = new Handshake(_sender,passwd);
+            var hs = new Handshake(_sender, passwd);
             var sessionKey = hs.AsClient();
 
             // initiate conversation
@@ -44,7 +44,7 @@ namespace SimpleVpn.Comms
             
             return _conversation;
         }
-        
+            
         public void Shutdown()
         {
             _sender.Shutdown(SocketShutdown.Both);
