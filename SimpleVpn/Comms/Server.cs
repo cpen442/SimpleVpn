@@ -69,10 +69,10 @@ namespace SimpleVpn.Comms
             {
                 try
                 {
-                    Console.Write("Please enter your very own secret number:");
+                    Console.Write("Please enter your very own secret number: ");
                     b = Console.ReadLine();
                     DHb_val = DH.hardComputeSharedDH(Convert.ToInt64(b));
-                    CConsole.WriteLine("The g^b mod p value is:" + DHb_val, ConsoleColor.Red); //red for testing
+                    CConsole.WriteLine("The g^b mod p value SENT is: " + DHb_val, ConsoleColor.Red); //red for testing
                 }
                 catch (FormatException)
                 {
@@ -90,11 +90,12 @@ namespace SimpleVpn.Comms
             do
             {
                 msg = convos._message;
-                DHa_val = 2;//BigInteger.Parse(msg);
             } while (msg.Equals(""));
 
-            CConsole.WriteLine("The g^a mod p value RECEIVED is:" + msg, ConsoleColor.Red); // red for testing
+            CConsole.WriteLine("The g^a mod p value RECEIVED is: " + msg, ConsoleColor.Red); // red for testing
+            DHa_val = BigInteger.Parse(msg);//new BigInteger(Encoding.UTF8.GetBytes(msg));
             convos._secretSet = true;
+            CConsole.WriteLine("The g^a mod p value CONVERTED from UTF8 is: " + DHa_val, ConsoleColor.Red); // red for testing
 
             // calculate DH value
             BigInteger DH_final = DH.hardComputeFinalDH(DHa_val, Convert.ToInt64(b));
