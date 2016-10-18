@@ -38,9 +38,7 @@ namespace SimpleVpn.Comms
             _conversation = new Conversation(_sender, new Cipher(sessionKey));
 
             // connect
-            var state = new SocketState { WorkSocket = _sender };
-            _sender.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
-                new AsyncCallback(_conversation.Listen), state);
+            _conversation.BeginReceive();
             
             return _conversation;
         }

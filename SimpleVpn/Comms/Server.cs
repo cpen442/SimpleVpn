@@ -47,8 +47,7 @@ namespace SimpleVpn.Comms
             state.WorkSocket = handler;
 
             // connect
-            handler.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
-                new AsyncCallback(_conversation.Listen), state);
+            _conversation.BeginReceive();
             
             return _conversation;
         }

@@ -54,5 +54,12 @@ namespace SimpleVpn.Comms
             sending.Add(Variables.EOF);
             _socket.Send(sending.ToArray());
         }
+
+        public void BeginReceive()
+        {
+            var state = new SocketState { WorkSocket = _socket };
+            _socket.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
+                new AsyncCallback(Listen), state);
+        }
     }
 }
