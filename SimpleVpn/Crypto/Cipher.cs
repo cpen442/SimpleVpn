@@ -13,7 +13,6 @@ namespace SimpleVpn.Crypto
         private byte[] key { get; set; } // shared secret session key obtained from Diffie-Hellman
 
         private string hash = "SHA1";
-        private byte[] IV;
         private byte[] salt;
         private int maxSaltIVLength = 16; // max length for randomly generated salt or IV values
         private int keySize = 256; // use 256-bit AES key
@@ -21,13 +20,11 @@ namespace SimpleVpn.Crypto
 
         public Cipher(byte[] key)
         {
-            IV = new byte[maxSaltIVLength];
             salt = new byte[maxSaltIVLength];
             this.key = new byte[keySize];
 
-            Buffer.BlockCopy(key, 0, IV, 0, maxSaltIVLength); //slice off first 16 bytes to be used for random IV for AES
-            Buffer.BlockCopy(key, maxSaltIVLength, salt, 0, maxSaltIVLength); //slice off next 16 bytes to be used for random salt for AES
-            Buffer.BlockCopy(key, maxSaltIVLength * 2, this.key, 0, Buffer.ByteLength(key) - (maxSaltIVLength * 2));  // use remainder for session key     
+            Buffer.BlockCopy(key, 0, this.salt, 0, maxSaltIVLength); //slice off next 16 bytes to be used for random salt for AES
+            Buffer.BlockCopy(key, maxSaltIVLength, this.key, 0, Buffer.ByteLength(key) - (maxSaltIVLength));  // use remainder for session key     
         }
 
         public byte[] Encrypt(IEnumerable<byte> plainText)
@@ -45,6 +42,8 @@ namespace SimpleVpn.Crypto
         {
             byte[] plainTextBytes = plainText.ToArray<byte>();
             byte[] encrypted;
+
+            var IV = GenerateRandomCryptoValue();
 
             using (T cipher = new T())
             {
@@ -67,7 +66,10 @@ namespace SimpleVpn.Crypto
                 }
                 cipher.Clear();
             }
-            return encrypted;
+            var result = new List<byte>();
+            result.AddRange(IV);
+            result.AddRange(encrypted);
+            return result.ToArray();
         }
 
         public byte[] Decrypt(IEnumerable<byte> cipherText)
@@ -84,7 +86,8 @@ namespace SimpleVpn.Crypto
 
         public byte[] Decrypt<T>(IEnumerable<byte> cipherText, byte[] password) where T : SymmetricAlgorithm, new()
         {
-            byte[] cipherTextBytes = cipherText.ToArray<byte>();
+            byte[] IV = cipherText.Take(maxSaltIVLength).ToArray();
+            byte[] cipherTextBytes = cipherText.Skip(maxSaltIVLength).ToArray<byte>();
             byte[] decrypted;
 
             using (T cipher = new T())
@@ -118,6 +121,20 @@ namespace SimpleVpn.Crypto
             }
 
             return decrypted;
+        }
+
+        
+        //Helper Method to generate a random value to be used for salt or initialization vector (IV)
+        private byte[] GenerateRandomCryptoValue()
+        {
+            byte[] result = new byte[maxSaltIVLength];
+
+            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetNonZeroBytes(result);
+            }
+
+            return result;
         }
     }
 }
