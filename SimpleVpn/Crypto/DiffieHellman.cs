@@ -25,10 +25,10 @@ namespace SimpleVpn.Crypto
         {
             return BigInteger.ModPow(g, n, p);
         }
-        
+
         /* calculates a DH value using hardcoded G,P: [G^n mod P] */
         public BigInteger hardComputeSharedDH(BigInteger n)
-        { 
+        {
             var p = BigInteger.Parse(P);
             var g = BigInteger.Parse(G);
 

@@ -8,15 +8,21 @@ namespace SimpleVpn
 {
     public static class CConsole
     {
-        public static void WriteLine(string msg, ConsoleColor color, ConsoleColor? bgcol = null)
+        public static bool verbose = false;
+        public static bool step = false;
+
+        public static void WriteLine(string msg, ConsoleColor color, ConsoleColor? bgcol = null, bool nostep = false, bool forceVerbose = false)
         {
+            if(!forceVerbose && !verbose) return;
             setcolor(color, bgcol);
             Console.WriteLine(msg);
             Console.ResetColor();
+            if(!nostep) waitInput();
         }
 
-        public static void Write(string msg, ConsoleColor color, ConsoleColor? bgcol = null)
+        public static void Write(string msg, ConsoleColor color, ConsoleColor? bgcol = null, bool forceVerbose = false)
         {
+            if (!forceVerbose && !verbose) return;
             setcolor(color, bgcol);
             Console.Write(msg);
             Console.ResetColor();
@@ -30,6 +36,14 @@ namespace SimpleVpn
                 Console.BackgroundColor = bgcol.Value;
             }
             Console.ForegroundColor = col;
+        }
+
+        private static void waitInput()
+        {
+            if (!step) return;
+            Console.WriteLine("Press ENTER to continue...");
+
+            Console.ReadLine();
         }
 
         public static string ByteArrToStr(this IEnumerable<byte> input)

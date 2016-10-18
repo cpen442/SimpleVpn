@@ -10,51 +10,55 @@ namespace SimpleVpn.Crypto
     //Handles Encrypting and Decrypting messages using AES-256
     public class Cipher
     {
-        private string sharedKey { get; set; } // shared secret key
+        private byte[] key { get; set; } // shared secret session key obtained from Diffie-Hellman
 
         private string hash = "SHA1";
-        private string salt = "cb4BTrRzIMKLAUfa"; // REPLACE WITH RANDOMLY GENERATED VALUE TO BE SHARED ALONG WITH D-H VALUES
-        private string IV = "nK9ATSb1pMy25zuc"; // REPLACE WITH RANDOMLY GENERATED VALUE TO BE SHARED ALONG WITH D-H VALUES
-        private int maxSaltIVLength = 32; // max length for randomly generated salt or IV values
+        private byte[] salt;
+        private int maxSaltIVLength = 16; // max length for randomly generated salt or IV values
         private int keySize = 256; // use 256-bit AES key
         private int iterations = 4; // iterations to run PasswordDeriveBytes for
 
-        public Cipher(string key)
+        public Cipher(byte[] key)
         {
-            sharedKey = key;
+            salt = new byte[maxSaltIVLength];
+            this.key = new byte[keySize];
+
+            Buffer.BlockCopy(key, 0, this.salt, 0, maxSaltIVLength); //slice off next 16 bytes to be used for random salt for AES
+            Buffer.BlockCopy(key, maxSaltIVLength, this.key, 0, Buffer.ByteLength(key) - (maxSaltIVLength));  // use remainder for session key     
         }
 
         public byte[] Encrypt(IEnumerable<byte> plainText)
         {
-            CConsole.WriteLine("Encrypting Bytes: " + plainText.ByteArrToStr(), ConsoleColor.Cyan);
-
-            CConsole.WriteLine("Encrypted To: " + Encrypt<AesManaged>(plainText, sharedKey).ByteArrToStr(), ConsoleColor.Yellow);
+            CConsole.WriteLine("Encrypting Bytes: " + plainText.ByteArrToStr(), ConsoleColor.Cyan, nostep: true);
 
             //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
-            return Encrypt<AesManaged>(plainText, sharedKey);
+            var res = Encrypt<AesManaged>(plainText, key);
+            CConsole.WriteLine("Encrypted To: " + res.ByteArrToStr(), ConsoleColor.Yellow, nostep: true);
+
+            return res;
         }
 
-        public byte[] Encrypt<T>(IEnumerable<byte> plainText, string password) where T : SymmetricAlgorithm, new()
+        public byte[] Encrypt<T>(IEnumerable<byte> plainText, byte[] password) where T : SymmetricAlgorithm, new()
         {
-            byte[] valueBytes = plainText.ToArray<byte>();
-            byte[] saltBytes = ASCIIEncoding.ASCII.GetBytes(salt);
-            byte[] vectorBytes = ASCIIEncoding.ASCII.GetBytes(IV);
+            byte[] plainTextBytes = plainText.ToArray<byte>();
             byte[] encrypted;
+
+            var IV = GenerateRandomCryptoValue();
 
             using (T cipher = new T())
             {
-                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, saltBytes, hash, iterations);
+                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, hash, iterations);
                 byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
 
                 cipher.Mode = CipherMode.CBC;
 
-                using (ICryptoTransform encryptor = cipher.CreateEncryptor(keyBytes, vectorBytes))
+                using (ICryptoTransform encryptor = cipher.CreateEncryptor(keyBytes, IV))
                 {
                     using (MemoryStream to = new MemoryStream())
                     {
                         using (CryptoStream writer = new CryptoStream(to, encryptor, CryptoStreamMode.Write))
                         {
-                            writer.Write(valueBytes, 0, valueBytes.Length);
+                            writer.Write(plainTextBytes, 0, plainTextBytes.Length);
                             writer.FlushFinalBlock();
                             encrypted = to.ToArray();
                         }
@@ -62,43 +66,46 @@ namespace SimpleVpn.Crypto
                 }
                 cipher.Clear();
             }
-            return encrypted;
+            var result = new List<byte>();
+            result.AddRange(IV);
+            result.AddRange(encrypted);
+            return result.ToArray();
         }
 
         public byte[] Decrypt(IEnumerable<byte> cipherText)
         {
             Console.SetCursorPosition(0, Console.CursorTop);
-            CConsole.WriteLine("Decrypting Bytes: " + cipherText.ByteArrToStr(), ConsoleColor.Yellow);
-
-            CConsole.WriteLine("Decrypted To: " + Decrypt<AesManaged>(cipherText, sharedKey).ByteArrToStr(), ConsoleColor.Cyan);
+            CConsole.WriteLine("Decrypting Bytes: " + cipherText.ByteArrToStr(), ConsoleColor.Yellow, nostep: true);
 
             //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
-            return Decrypt<AesManaged>(cipherText, sharedKey);
+            var res = Decrypt<AesManaged>(cipherText, key);
+            CConsole.WriteLine("Decrypted To: " + res.ByteArrToStr(), ConsoleColor.Cyan, nostep: true);
+
+            return res;
         }
 
-        public byte[] Decrypt<T>(IEnumerable<byte> cipherText, string password) where T : SymmetricAlgorithm, new()
+        public byte[] Decrypt<T>(IEnumerable<byte> cipherText, byte[] password) where T : SymmetricAlgorithm, new()
         {
-            byte[] valueBytes = cipherText.ToArray<byte>();
-            byte[] saltBytes = ASCIIEncoding.ASCII.GetBytes(salt);
-            byte[] vectorBytes = ASCIIEncoding.ASCII.GetBytes(IV);
+            byte[] IV = cipherText.Take(maxSaltIVLength).ToArray();
+            byte[] cipherTextBytes = cipherText.Skip(maxSaltIVLength).ToArray<byte>();
             byte[] decrypted;
 
             using (T cipher = new T())
             {
-                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, saltBytes, hash, iterations);
+                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, hash, iterations);
                 byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
 
                 cipher.Mode = CipherMode.CBC;
 
                 try
                 {
-                    using (ICryptoTransform decryptor = cipher.CreateDecryptor(keyBytes, vectorBytes))
+                    using (ICryptoTransform decryptor = cipher.CreateDecryptor(keyBytes, IV))
                     {
-                        using (MemoryStream from = new MemoryStream(valueBytes))
+                        using (MemoryStream from = new MemoryStream(cipherTextBytes))
                         {
                             using (CryptoStream reader = new CryptoStream(from, decryptor, CryptoStreamMode.Read))
                             {
-                                decrypted = new byte[valueBytes.Length];
+                                decrypted = new byte[cipherTextBytes.Length];
                                 reader.Read(decrypted, 0, decrypted.Length);
                             }
                         }
@@ -116,8 +123,9 @@ namespace SimpleVpn.Crypto
             return decrypted;
         }
 
+        
         //Helper Method to generate a random value to be used for salt or initialization vector (IV)
-        private string GenerateRandomCryptoValue()
+        private byte[] GenerateRandomCryptoValue()
         {
             byte[] result = new byte[maxSaltIVLength];
 
@@ -126,7 +134,7 @@ namespace SimpleVpn.Crypto
                 rng.GetNonZeroBytes(result);
             }
 
-            return result.ByteArrToStr();
+            return result;
         }
     }
 }
