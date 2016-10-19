@@ -17,10 +17,11 @@ namespace SimpleVpn.Comms
         private byte[] key;
         private Cipher cipher;
 
+        // create a handshake
         public Handshake(Socket socket, string passwd)
         {
             this._socket = socket;
-            this.key = getHashSha256(passwd);
+            this.key = getHashSha256(passwd); // hash the shared Kab
             cipher = new Cipher(key);
             CConsole.WriteLine("Handshake Starting", ConsoleColor.Green, nostep: true);
             CConsole.WriteLine("Using Handshake Key (SHA256) of " + passwd + " : " + this.key.ByteArrToStr(), ConsoleColor.Green);
@@ -38,6 +39,7 @@ namespace SimpleVpn.Comms
             var rcvd = WaitMessageSync();
             Console.WriteLine("");
 
+            // check "client"
             if (rcvd.First() != (byte)ModeByte.Client)
             {
                 throw new UnauthorizedAccessException("received message is not sent from client");
@@ -46,6 +48,7 @@ namespace SimpleVpn.Comms
             CConsole.WriteLine("I am challenged with Ra: " + RaBytes.ByteArrToStr(), ConsoleColor.Green);
             Console.WriteLine("");
 
+            // generate Rb challenge
             var r = new Random();
             var RbBytes = RandomBytes(Variables.RaRbLength, r);
 
@@ -62,17 +65,18 @@ namespace SimpleVpn.Comms
             CConsole.WriteLine("Sending D-H g^b mod p value: " + DHb_val, ConsoleColor.Green);
             Console.WriteLine("");
 
-            var enc = new List<byte>(); //corresponds to E("Svr", Ra, g^b modp, Kab)
-
+            // enc = E("Svr", Ra, g^b modp, Kab)
+            var enc = new List<byte>(); 
             enc.Add((byte)ModeByte.Server);
             enc.AddRange(RaBytes);
             enc.AddRange(DHb_val.ToByteArray());
             enc = cipher.Encrypt(enc).ToList<byte>();
 
+            // SvrToClnt: Rb, enc
             var m = new List<byte>();
             m.AddRange(RbBytes);
             m.AddRange(enc);
-            // SvrToClnt: Rb, E("Svr", Ra, g^b modp, Kab)
+
             CConsole.WriteLine("Sending Rb, E('Sever',Ra, g^b mod p) " + DHb_val, ConsoleColor.Green);
             SendMessageSync(m);
             Console.WriteLine("");
@@ -81,15 +85,18 @@ namespace SimpleVpn.Comms
             CConsole.Write("Waiting for Message: E('Client', Rb, g^a mod p ):", ConsoleColor.Green);
             rcvd = cipher.Decrypt(WaitMessageSync());
 
+            // check "client"
             if (rcvd.First() != (byte)ModeByte.Client)
             {
                 throw new UnauthorizedAccessException("received message did not come from client, Or the passwords do not match.");
             }
-            //if Rb != received and decrypted rb
+            // check if Rb != received and decrypted rb
             if (!ByteArrMatches(rcvd.Skip(1).Take(Variables.RaRbLength), (RbBytes)))
             {
                 throw new UnauthorizedAccessException("Password mismatch");
             }
+
+            // get g^a mod p value
             var gamodp = rcvd.Skip(1 + Variables.RaRbLength).ToArray();
             var DHa_val = new BigInteger(gamodp);
 
@@ -120,8 +127,8 @@ namespace SimpleVpn.Comms
             Console.WriteLine("");
 
             var m = new List<byte>();
-            m.Add((byte)ModeByte.Client);
-            m.AddRange(RaBytes);
+            m.Add((byte)ModeByte.Client); 
+            m.AddRange(RaBytes);    
 
             CConsole.Write("Sending Message: 'Client',Ra:", ConsoleColor.Green);
             SendMessageSync(m);
@@ -132,19 +139,20 @@ namespace SimpleVpn.Comms
             var rcvd = WaitMessageSync().ToList();
             Console.WriteLine("");
 
-            //given above uint, expect first {Variables.RaRbLength} bytes as RB, rest as E("Svr",Ra, g^b modp, Kab)
+            // given above uint, expect first {Variables.RaRbLength} bytes as RB, rest as E("Svr",Ra, g^b modp, Kab)
             var Rb = rcvd.Take(Variables.RaRbLength).ToArray();
             CConsole.WriteLine("I am challenged with Rb: " + Rb.ByteArrToStr(), ConsoleColor.Green);
             Console.WriteLine("");
 
             var dec = cipher.Decrypt(rcvd.Skip(Variables.RaRbLength));
 
+            // check for "Svr"
             if (dec.First() != (byte)ModeByte.Server)
             {
                 throw new UnauthorizedAccessException("Received message did not come from server, Or the password do not match.");
             }
 
-            //if Ra != received and decrypted ra
+            // check if Ra != received and decrypted ra
             if (!ByteArrMatches(dec.Skip(1).Take(Variables.RaRbLength), RaBytes))
             {
                 throw new UnauthorizedAccessException("Password mismatch");
@@ -152,6 +160,7 @@ namespace SimpleVpn.Comms
             CConsole.WriteLine("Received Ra challenge response and passed: " + RaBytes.ByteArrToStr(), ConsoleColor.Green);
             Console.WriteLine("");
 
+            // grab g^b modp value
             var gbmodp = dec.Skip(1 + Variables.RaRbLength).ToArray();
             BigInteger DHb_val = new BigInteger(gbmodp);
             CConsole.WriteLine("Received D-H g^b mod p value: " + DHb_val, ConsoleColor.Green);
@@ -188,6 +197,8 @@ namespace SimpleVpn.Comms
 
             return DH_final.ToByteArray();
         }
+
+        /* below are helper functions */
 
         private void SendMessageSync(IEnumerable<byte> m)
         {

@@ -8,6 +8,7 @@ namespace SimpleVpn
 {
     public static class CConsole
     {
+        // flags for debugging
         public static bool verbose = false;
         public static bool step = false;
 

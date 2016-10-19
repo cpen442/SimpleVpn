@@ -29,11 +29,11 @@ namespace SimpleVpn.Comms
             _sender.Connect(_remoteEndpoint);
             Console.WriteLine("Socket connected to {0}", _sender.RemoteEndPoint.ToString());
 
-            // shake hands
+            // shake hands with Kab password
             var hs = new Handshake(_sender, passwd);
-            var sessionKey = hs.AsClient();
+            var sessionKey = hs.AsClient(); // returns DH value
 
-            // initiate conversation
+            // initiate conversation with DH session key
             _conversation = new Conversation(_sender, new Cipher(sessionKey));
 
             // connect
