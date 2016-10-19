@@ -35,11 +35,11 @@ namespace SimpleVpn.Comms
             var handler = _listener.Accept();
             Console.WriteLine("Connected to client: {0}", handler.RemoteEndPoint.ToString());
 
-            // shake hands
+            // shake hands with Kab password
             var hs = new Handshake(handler, passwd);
             var sessionKey = hs.AsServer();
 
-            // initiate conversation
+            // initiate conversation with DH session key
             _conversation = new Conversation(handler, new Cipher(sessionKey));
 
             // create socket

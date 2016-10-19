@@ -29,7 +29,7 @@ namespace SimpleVpn.Comms
 
             try
             {
-                bytesRead = client.EndReceive(ar);
+                bytesRead = client.EndReceive(ar); // stop current listener
             }
             catch (SocketException se)
             {
@@ -42,6 +42,7 @@ namespace SimpleVpn.Comms
             }
             if (state.LongTermBuffer.Last().Equals(Variables.EOF))
             {
+                // get decrypted data and display on console
                 var decrypted = _cipher.Decrypt(state.LongTermBuffer.Take(state.LongTermBuffer.Count - 1)); //remove the EOF byte then decrypt
                 var msg = Encoding.ASCII.GetString(decrypted);
                 Console.SetCursorPosition(0, Console.CursorTop);
@@ -51,13 +52,14 @@ namespace SimpleVpn.Comms
             }
 
             client.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
-                new AsyncCallback(Listen), state);
+                new AsyncCallback(Listen), state); // start new listener
         }
 
         public void Speak(string message)
         {
             if(string.IsNullOrEmpty(message))return;
 
+            // send encrypted data
             var bytes = Encoding.ASCII.GetBytes(message);
             var encrypted = _cipher.Encrypt(bytes);
             var sending = new List<byte>();
