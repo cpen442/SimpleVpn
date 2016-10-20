@@ -14,7 +14,6 @@ namespace SimpleVpn.Crypto
     {
         /* fields */
         private byte[] encryptionKey { get; set; } // shared secret session key obtained from Diffie-Hellman
-        private byte[] integrityKey { get; set; } // key from HMAC SHA256 for integrity check
         private byte[] salt;
 
         /* constructor */
@@ -27,11 +26,11 @@ namespace SimpleVpn.Crypto
             Buffer.BlockCopy(key, 0, this.salt, 0, Variables.maxSaltIVLength);
 
             // use remainder for session key  
-            Buffer.BlockCopy(key, Variables.maxSaltIVLength, this.encryptionKey, 0, Buffer.ByteLength(key) - (Variables.maxSaltIVLength));     
+            Buffer.BlockCopy(key, Variables.maxSaltIVLength, this.encryptionKey, 0, Buffer.ByteLength(key) - (Variables.maxSaltIVLength));
         }
 
 
-        
+
         /* encrypt */
         public byte[] Encrypt(IEnumerable<byte> plainText)
         {
@@ -60,9 +59,9 @@ namespace SimpleVpn.Crypto
                 PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, Variables.hash, Variables.iterations);
                 byte[] encryptionKeyBytes = _passwordBytes.GetBytes((Variables.AESkeySize) / 8);
                 byte[] integrityKeyBytes = _passwordBytes.GetBytes((Variables.HMACkeySize) / 8);
-                
+
                 cipher.Mode = CipherMode.CBC;
-                
+
                 using (ICryptoTransform encryptor = cipher.CreateEncryptor(encryptionKeyBytes, IV))
                 {
                     using (MemoryStream to = new MemoryStream())
@@ -75,7 +74,7 @@ namespace SimpleVpn.Crypto
                         }
                     }
                 }
-                
+
                 integrityKeyBytesOut = integrityKeyBytes;
                 cipher.Clear();
             }
@@ -86,10 +85,9 @@ namespace SimpleVpn.Crypto
 
             // integrity key is HMAC(result, integrity key)
             byte[] MAC = HMAC(integrityKeyBytesOut, result);
-            this.integrityKey = MAC;
 
-            // append the MAC to the end
-            result = ADD(result, MAC);
+            // result is MAC + IV + ciphertext
+            result = ADD(MAC, result);
 
             return result.ToArray();
         }
@@ -110,23 +108,40 @@ namespace SimpleVpn.Crypto
             return res;
         }
 
-        /* decrypt helper using block cipher */
+        /* decrypt helper: block cipher with integrity check*/
         public byte[] Decrypt<T>(IEnumerable<byte> cipherText, byte[] password) where T : SymmetricAlgorithm, new()
         {
-            byte[] IV = cipherText.Take(Variables.maxSaltIVLength).ToArray();
-            byte[] cipherTextBytes = cipherText.Skip(Variables.maxSaltIVLength).ToArray<byte>();
+            // get values from cipher: (MAC + IV + ciphertext)
+            byte[] receivedMAC = cipherText.Take(Variables.HMACkeySize).ToArray();
+            byte[] result = cipherText.Skip(Variables.HMACkeySize).ToArray<byte>();
+
+            byte[] IV = result.Take(Variables.maxSaltIVLength).ToArray();
+            byte[] cipherTextBytes = result.Skip(Variables.maxSaltIVLength).ToArray<byte>();
+
+            /*byte[] IV = cipherText.Take(Variables.maxSaltIVLength).ToArray();
+            byte[] cipherTextBytes = cipherText.Skip(Variables.maxSaltIVLength).ToArray<byte>();*/
+
             byte[] decrypted;
 
             using (T cipher = new T())
             {
                 PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, Variables.hash, Variables.iterations);
-                byte[] keyBytes = _passwordBytes.GetBytes(Variables.AESkeySize / 8);
+                byte[] decryptionKeyBytes = _passwordBytes.GetBytes(Variables.AESkeySize / 8);
+                byte[] integrityKeyBytes = _passwordBytes.GetBytes(Variables.HMACkeySize / 8);
 
+                // compute MAC
+                //byte[] computedMAC = HMAC(integrityKeyBytes, result);
+
+                // check MAC
+                //if (!computedMAC.Equals(receivedMAC))
+               //     throw new UnauthorizedAccessException("Unauthorized message: MAC values do not match");
+
+                // begin decryption process
                 cipher.Mode = CipherMode.CBC;
-
+                
                 try
                 {
-                    using (ICryptoTransform decryptor = cipher.CreateDecryptor(keyBytes, IV))
+                    using (ICryptoTransform decryptor = cipher.CreateDecryptor(decryptionKeyBytes, IV))
                     {
                         using (MemoryStream from = new MemoryStream(cipherTextBytes))
                         {
@@ -140,6 +155,7 @@ namespace SimpleVpn.Crypto
                 }
                 catch (Exception ex)
                 {
+                    // catch unauthorized msgs
                     byte[] exceptionBytes = Encoding.ASCII.GetBytes(ex.ToString());
                     return exceptionBytes;
                 }
@@ -151,7 +167,7 @@ namespace SimpleVpn.Crypto
         }
 
 
-        /*Helper Methods*/ 
+        /*Helper Methods*/
 
         //generate a random value to be used for salt or initialization vector (IV)
         private byte[] GenerateRandomCryptoValue()
@@ -174,7 +190,8 @@ namespace SimpleVpn.Crypto
         }
 
         // concatenate 2 byte arrays" first|second
-        public static byte[] ADD(byte[] first, byte[] second) {
+        public static byte[] ADD(byte[] first, byte[] second)
+        {
             byte[] result = new byte[first.Length + second.Length];
             Buffer.BlockCopy(first, 0, result, 0, first.Length);
             Buffer.BlockCopy(second, 0, result, first.Length, second.Length);
