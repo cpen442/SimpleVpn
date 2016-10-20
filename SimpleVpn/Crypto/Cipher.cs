@@ -13,50 +13,57 @@ namespace SimpleVpn.Crypto
     public class Cipher
     {
         /* fields */
-        private byte[] key { get; set; } // shared secret session key obtained from Diffie-Hellman
+        private byte[] encryptionKey { get; set; } // shared secret session key obtained from Diffie-Hellman
+        private byte[] integrityKey { get; set; } // key from HMAC SHA256 for integrity check
         private byte[] salt;
 
         /* constructor */
         public Cipher(byte[] key)
         {
             salt = new byte[Variables.maxSaltIVLength];
-            this.key = new byte[Variables.keySize];
+            this.encryptionKey = new byte[Variables.AESkeySize];
 
             // slice off next 16 bytes to be used for random salt for AES
             Buffer.BlockCopy(key, 0, this.salt, 0, Variables.maxSaltIVLength);
 
             // use remainder for session key  
-            Buffer.BlockCopy(key, Variables.maxSaltIVLength, this.key, 0, Buffer.ByteLength(key) - (Variables.maxSaltIVLength));     
+            Buffer.BlockCopy(key, Variables.maxSaltIVLength, this.encryptionKey, 0, Buffer.ByteLength(key) - (Variables.maxSaltIVLength));     
         }
 
+
+        
         /* encrypt */
         public byte[] Encrypt(IEnumerable<byte> plainText)
         {
             CConsole.WriteLine("Encrypting Bytes: " + plainText.ByteArrToStr(), ConsoleColor.Cyan, nostep: true);
 
             //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
-            var res = Encrypt<AesManaged>(plainText, key);
+            var res = Encrypt<AesManaged>(plainText, encryptionKey);
             CConsole.WriteLine("Encrypted To: " + res.ByteArrToStr(), ConsoleColor.Yellow, nostep: true);
 
             return res;
         }
 
-        /* encrypt helper: implements block cipher*/
+        /* encrypt helper: implements block cipher with integrity check*/
         public byte[] Encrypt<T>(IEnumerable<byte> plainText, byte[] password) where T : SymmetricAlgorithm, new()
         {
             byte[] plainTextBytes = plainText.ToArray<byte>();
             byte[] encrypted;
+            byte[] integrityKeyBytesOut;
+
 
             var IV = GenerateRandomCryptoValue();
 
             using (T cipher = new T())
             {
+                // get key bytes from session key, salt, hash algorithm, and num iterations
                 PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, Variables.hash, Variables.iterations);
-                byte[] keyBytes = _passwordBytes.GetBytes(Variables.keySize / 8);
-
+                byte[] encryptionKeyBytes = _passwordBytes.GetBytes((Variables.AESkeySize) / 8);
+                byte[] integrityKeyBytes = _passwordBytes.GetBytes((Variables.HMACkeySize) / 8);
+                
                 cipher.Mode = CipherMode.CBC;
-
-                using (ICryptoTransform encryptor = cipher.CreateEncryptor(keyBytes, IV))
+                
+                using (ICryptoTransform encryptor = cipher.CreateEncryptor(encryptionKeyBytes, IV))
                 {
                     using (MemoryStream to = new MemoryStream())
                     {
@@ -68,15 +75,27 @@ namespace SimpleVpn.Crypto
                         }
                     }
                 }
+                
+                integrityKeyBytesOut = integrityKeyBytes;
                 cipher.Clear();
             }
 
-            // result = IV + encrypted bytes
-            var result = new List<byte>();
-            result.AddRange(IV);
-            result.AddRange(encrypted);
+
+            // result is IV + encrypted bytes
+            byte[] result = ADD(IV, encrypted);
+
+            // integrity key is HMAC(result, integrity key)
+            byte[] MAC = HMAC(integrityKeyBytesOut, result);
+            this.integrityKey = MAC;
+
+            // append the MAC to the end
+            result = ADD(result, MAC);
+
             return result.ToArray();
         }
+
+
+
 
         /* decrypt */
         public byte[] Decrypt(IEnumerable<byte> cipherText)
@@ -85,7 +104,7 @@ namespace SimpleVpn.Crypto
             CConsole.WriteLine("Decrypting Bytes: " + cipherText.ByteArrToStr(), ConsoleColor.Yellow, nostep: true);
 
             //May use SymmetricAlgorithms other than AesManaged if desired, e.g. RijndaelManaged
-            var res = Decrypt<AesManaged>(cipherText, key);
+            var res = Decrypt<AesManaged>(cipherText, encryptionKey);
             CConsole.WriteLine("Decrypted To: " + res.ByteArrToStr(), ConsoleColor.Cyan, nostep: true);
 
             return res;
@@ -101,7 +120,7 @@ namespace SimpleVpn.Crypto
             using (T cipher = new T())
             {
                 PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, Variables.hash, Variables.iterations);
-                byte[] keyBytes = _passwordBytes.GetBytes(Variables.keySize / 8);
+                byte[] keyBytes = _passwordBytes.GetBytes(Variables.AESkeySize / 8);
 
                 cipher.Mode = CipherMode.CBC;
 
@@ -131,8 +150,10 @@ namespace SimpleVpn.Crypto
             return decrypted;
         }
 
-        
-        //Helper Method to generate a random value to be used for salt or initialization vector (IV)
+
+        /*Helper Methods*/ 
+
+        //generate a random value to be used for salt or initialization vector (IV)
         private byte[] GenerateRandomCryptoValue()
         {
             byte[] result = new byte[Variables.maxSaltIVLength];
@@ -141,6 +162,22 @@ namespace SimpleVpn.Crypto
             {
                 rng.GetNonZeroBytes(result);
             }
+
+            return result;
+        }
+
+        //compute the HMAC SHA256 value
+        private static byte[] HMAC(byte[] key, byte[] message)
+        {
+            var hmac = new HMACSHA256(key);
+            return hmac.ComputeHash(message);
+        }
+
+        // concatenate 2 byte arrays" first|second
+        public static byte[] ADD(byte[] first, byte[] second) {
+            byte[] result = new byte[first.Length + second.Length];
+            Buffer.BlockCopy(first, 0, result, 0, first.Length);
+            Buffer.BlockCopy(second, 0, result, first.Length, second.Length);
 
             return result;
         }

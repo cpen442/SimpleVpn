@@ -12,8 +12,10 @@
         /* constants for encrypt/decrypt of messages */
         public const string hash = "SHA1";
         public const int maxSaltIVLength = 16; // max length for randomly generated salt or IV values
-        public const int keySize = 256; // use 256-bit AES key
-        public const int iterations = 4; // iterations to run PasswordDeriveBytes (of block cipher) for
+        public const int AESkeySize = 256; // 256-bit AES key for encryption
+        public const int iterations = 4000; // iterations to run PasswordDeriveBytes (of block cipher) for
+
+        public const int HMACkeySize = 256; // 256-bit HMACSHA256 key for integrity
 
         /*hard coded constants for DiffieHellman*/
         // P is a 1080 bit prime 
