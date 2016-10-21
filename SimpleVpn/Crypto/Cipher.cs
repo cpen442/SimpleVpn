@@ -73,7 +73,7 @@ namespace SimpleVpn.Crypto
             var result = new List<byte>();
             result.AddRange(IV);
             result.AddRange(encrypted);
-            result.AddRange(hmac.ComputeHash(encrypted));
+            result.AddRange(hmac.ComputeHash(result.ToArray()));
             return result.ToArray();
         }
 
@@ -91,8 +91,9 @@ namespace SimpleVpn.Crypto
 
         public byte[] Decrypt<T>(IEnumerable<byte> cipherText, byte[] password) where T : SymmetricAlgorithm, new()
         {
-            byte[] IV = cipherText.Take(maxSaltIVLength).ToArray();
             int cipherTextLength = cipherText.Count() - maxSaltIVLength - hmacLength;
+            byte[] ivPlusCipherTextBytes = cipherText.Take(maxSaltIVLength + cipherTextLength).ToArray();
+            byte[] IV = cipherText.Take(maxSaltIVLength).ToArray();
             byte[] cipherTextBytes = cipherText.Skip(maxSaltIVLength).Take(cipherTextLength).ToArray();
             byte[] decrypted;
             
@@ -103,7 +104,7 @@ namespace SimpleVpn.Crypto
 
                 hmac = new HMACSHA256(keyBytes); //initiate HMAC
                 byte[] hmacBytes = cipherText.Skip(maxSaltIVLength + cipherTextLength).ToArray();
-                byte[] checkHMAC = hmac.ComputeHash(cipherTextBytes);
+                byte[] checkHMAC = hmac.ComputeHash(ivPlusCipherTextBytes);
 
                 //Data Integrity Check
                 if (!hmacBytes.SequenceEqual(checkHMAC))
