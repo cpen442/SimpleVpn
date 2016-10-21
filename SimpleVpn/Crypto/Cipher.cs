@@ -16,7 +16,7 @@ namespace SimpleVpn.Crypto
         private byte[] salt;
         private int maxSaltIVLength = 16; // max length for randomly generated salt or IV values
         private int keySize = 256; // use 256-bit AES key
-        private int iterations = 4; // iterations to run PasswordDeriveBytes for
+        private int iterations = 2000; // iterations to run PasswordDeriveBytes for
 
         public Cipher(byte[] key)
         {
