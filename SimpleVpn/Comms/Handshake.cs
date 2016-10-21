@@ -5,7 +5,6 @@ using System.Net.Sockets;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using SimpleVpn.Constants;
 using SimpleVpn.Crypto;
 

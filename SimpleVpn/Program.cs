@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 using SimpleVpn.Comms;
 using SimpleVpn.Constants;
-using System.Numerics;
 using System.Windows.Forms;
 
 namespace SimpleVpn

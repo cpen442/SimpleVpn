@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using SimpleVpn.Constants;
 using SimpleVpn.Crypto;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
-using System.Numerics;
 
 namespace SimpleVpn.Comms
 {

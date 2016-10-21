@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using SimpleVpn.Constants;
 using SimpleVpn.Crypto;
-using System.Numerics;
 
 namespace SimpleVpn.Comms
 {
