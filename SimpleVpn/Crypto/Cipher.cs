@@ -16,8 +16,8 @@ namespace SimpleVpn.Crypto
         private byte[] salt;
         private int maxSaltIVLength = 16; // max byte length for randomly generated salt or IV values
         private int keySize = 256;
-        private int hmacLength = 32; //16 for SHAMD5, 32 for SHA256
-        private int iterations = 2000; // iterations to run PasswordDeriveBytes for
+        private int hmacLength = 32; //byte length for HMAC; 16 for SHAMD5, 32 for SHA256
+        private int iterations = 4000; // iterations to run PasswordDeriveBytes for
 
         private HMACSHA256 hmac;
 
