@@ -16,7 +16,7 @@ namespace SimpleVpn.Crypto
         private byte[] salt;
         private int maxSaltIVLength = 16; // max byte length for randomly generated salt or IV values
         private int keySize = 256;
-        private int hmacLength = 32; //16 for MD5, 32 for SHA256
+        private int hmacLength = 32; //16 for SHAMD5, 32 for SHA256
         private int iterations = 2000; // iterations to run PasswordDeriveBytes for
 
         private HMACSHA256 hmac;
@@ -28,7 +28,6 @@ namespace SimpleVpn.Crypto
 
             Buffer.BlockCopy(key, 0, this.salt, 0, maxSaltIVLength); //slice off first 16 bytes to be used for random salt for AES
             Buffer.BlockCopy(key, maxSaltIVLength, this.key, 0, Buffer.ByteLength(key) - (maxSaltIVLength));  // use remainder for session key   
-            hmac = new HMACSHA256(this.key); //initiate HMAC
         }
 
         public byte[] Encrypt(IEnumerable<byte> plainText)
@@ -53,6 +52,7 @@ namespace SimpleVpn.Crypto
             {
                 PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, hash, iterations);
                 byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
+                hmac = new HMACSHA256(keyBytes); //initiate HMAC
 
                 cipher.Mode = CipherMode.CBC;
 
@@ -94,20 +94,22 @@ namespace SimpleVpn.Crypto
             byte[] IV = cipherText.Take(maxSaltIVLength).ToArray();
             int cipherTextLength = cipherText.Count() - maxSaltIVLength - hmacLength;
             byte[] cipherTextBytes = cipherText.Skip(maxSaltIVLength).Take(cipherTextLength).ToArray();
-            byte[] hmacBytes = cipherText.Skip(maxSaltIVLength + cipherTextLength).ToArray();
             byte[] decrypted;
-            byte[] checkHMAC = hmac.ComputeHash(cipherTextBytes);
-
-            //Data Integrity Check
-            if (!hmacBytes.SequenceEqual(checkHMAC))
-            {
-                throw new UnauthorizedAccessException("HMAC Does Not Match. Data Tampering Detected. Closing Connection..." + hmac.ComputeHash(cipherTextBytes).ByteArrToStr() + " != " + hmacBytes.ByteArrToStr());
-            }
-
+            
             using (T cipher = new T())
             {
                 PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, hash, iterations);
                 byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
+
+                hmac = new HMACSHA256(keyBytes); //initiate HMAC
+                byte[] hmacBytes = cipherText.Skip(maxSaltIVLength + cipherTextLength).ToArray();
+                byte[] checkHMAC = hmac.ComputeHash(cipherTextBytes);
+
+                //Data Integrity Check
+                if (!hmacBytes.SequenceEqual(checkHMAC))
+                {
+                    throw new UnauthorizedAccessException("HMAC Does Not Match. Data Tampering Detected. Closing Connection...");
+                }
 
                 cipher.Mode = CipherMode.CBC;
 
