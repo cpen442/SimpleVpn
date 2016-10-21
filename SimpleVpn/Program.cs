@@ -53,8 +53,6 @@ namespace SimpleVpn
 
                         var server = new Server(port);
 
-
-
                         Console.Write("Please enter the secret shared key:");
                         string sharedKey = Console.ReadLine();
                         conversation = server.Converse(sharedKey);
@@ -83,7 +81,7 @@ namespace SimpleVpn
                         throw new ArgumentException("Please enter a valid mode of operation.");
                 }
 
-                while (true)
+                while (conversation.IsLive)
                 {
                     Console.Write(Variables.SendMsg);
                     var msg = Console.ReadLine();
@@ -108,7 +106,6 @@ namespace SimpleVpn
                 }
                 Environment.Exit(-1);
             }
-
         }
     }
 }
