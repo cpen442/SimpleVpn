@@ -35,12 +35,6 @@ namespace SimpleVpn.Comms
             _conversation.BeginReceive();
             
             return _conversation;
-        }
-            
-        public void Shutdown()
-        {
-            _sender.Shutdown(SocketShutdown.Both);
-            _sender.Close();
-        }
+        }           
     }
 }
