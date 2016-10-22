@@ -27,7 +27,7 @@ namespace SimpleVpn.Comms
 
             try
             {
-                var bytesRead = client.EndReceive(ar);
+                var bytesRead = client.EndReceive(ar); // stop listening
 
                 if (bytesRead > 0)
                 {
@@ -35,8 +35,10 @@ namespace SimpleVpn.Comms
                 }
                 if (state.LongTermBuffer.Last().Equals(Variables.EOF))
                 {
+                    // get decrypted msg
                     var decrypted = _cipher.Decrypt(state.LongTermBuffer.Take(state.LongTermBuffer.Count - 1)); //remove the EOF byte then decrypt
                     var msg = Encoding.ASCII.GetString(decrypted);
+                    // display the msg on UI
                     Console.SetCursorPosition(0, Console.CursorTop);
                     Console.WriteLine(Variables.ReceivedMsg + msg);
                     Console.Write(Variables.SendMsg);
@@ -44,7 +46,7 @@ namespace SimpleVpn.Comms
                 }
 
                 client.BeginReceive(state.Buffer, 0, SocketState.BufferSize, 0,
-                    new AsyncCallback(Listen), state);
+                    new AsyncCallback(Listen), state); // start new listener
             }
             catch
             {
@@ -59,10 +61,10 @@ namespace SimpleVpn.Comms
             if (string.IsNullOrEmpty(message)) return;
 
             var bytes = Encoding.ASCII.GetBytes(message);
-            var encrypted = _cipher.Encrypt(bytes);
+            var encrypted = _cipher.Encrypt(bytes); // encrypt message
             var sending = new List<byte>();
             sending.AddRange(encrypted);
-            sending.Add(Variables.EOF);
+            sending.Add(Variables.EOF); // end of message
             _socket.Send(sending.ToArray());
         }
 

@@ -4,30 +4,24 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Security.Cryptography;
+using SimpleVpn.Constants;
 
 namespace SimpleVpn.Crypto
 {
     //Handles Encrypting and Decrypting messages using AES-256
     public class Cipher
     {
-        private byte[] key { get; set; } // shared secret session key obtained from Diffie-Hellman
-
-        private string hash = "SHA1";
+        private byte[] key { get; set; } // shared secret session key obtained from Diffie-Hellman 
         private byte[] salt;
-        private int maxSaltIVLength = 16; // max byte length for randomly generated salt or IV values
-        private int keySize = 256;
-        private int hmacLength = 32; //byte length for HMAC; 16 for SHAMD5, 32 for SHA256
-        private int iterations = 4000; // iterations to run PasswordDeriveBytes for
-
         private HMACSHA256 hmac;
 
         public Cipher(byte[] key)
         {
-            salt = new byte[maxSaltIVLength];
-            this.key = new byte[keySize];
+            salt = new byte[Variables.maxSaltIVLength];
+            this.key = new byte[Variables.keySize];
 
-            Buffer.BlockCopy(key, 0, this.salt, 0, maxSaltIVLength); //slice off first 16 bytes to be used for random salt for AES
-            Buffer.BlockCopy(key, maxSaltIVLength, this.key, 0, Buffer.ByteLength(key) - (maxSaltIVLength));  // use remainder for session key   
+            Buffer.BlockCopy(key, 0, this.salt, 0, Variables.maxSaltIVLength); //slice off first 16 bytes to be used for random salt for AES
+            Buffer.BlockCopy(key, Variables.maxSaltIVLength, this.key, 0, Buffer.ByteLength(key) - (Variables.maxSaltIVLength));  // use remainder for session key   
         }
 
         public byte[] Encrypt(IEnumerable<byte> plainText)
@@ -50,8 +44,8 @@ namespace SimpleVpn.Crypto
 
             using (T cipher = new T())
             {
-                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, hash, iterations);
-                byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
+                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, Variables.hash, Variables.iterations);
+                byte[] keyBytes = _passwordBytes.GetBytes(Variables.keySize / 8);
                 hmac = new HMACSHA256(keyBytes); //initiate HMAC
 
                 cipher.Mode = CipherMode.CBC;
@@ -91,19 +85,19 @@ namespace SimpleVpn.Crypto
 
         public byte[] Decrypt<T>(IEnumerable<byte> cipherText, byte[] password) where T : SymmetricAlgorithm, new()
         {
-            int cipherTextLength = cipherText.Count() - maxSaltIVLength - hmacLength;
-            byte[] ivPlusCipherTextBytes = cipherText.Take(maxSaltIVLength + cipherTextLength).ToArray();
-            byte[] IV = cipherText.Take(maxSaltIVLength).ToArray();
-            byte[] cipherTextBytes = cipherText.Skip(maxSaltIVLength).Take(cipherTextLength).ToArray();
+            int cipherTextLength = cipherText.Count() - Variables.maxSaltIVLength - Variables.hmacLength;
+            byte[] ivPlusCipherTextBytes = cipherText.Take(Variables.maxSaltIVLength + cipherTextLength).ToArray();
+            byte[] IV = cipherText.Take(Variables.maxSaltIVLength).ToArray();
+            byte[] cipherTextBytes = cipherText.Skip(Variables.maxSaltIVLength).Take(cipherTextLength).ToArray();
             byte[] decrypted;
             
             using (T cipher = new T())
             {
-                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, hash, iterations);
-                byte[] keyBytes = _passwordBytes.GetBytes(keySize / 8);
+                PasswordDeriveBytes _passwordBytes = new PasswordDeriveBytes(password, salt, Variables.hash, Variables.iterations);
+                byte[] keyBytes = _passwordBytes.GetBytes(Variables.keySize / 8);
 
                 hmac = new HMACSHA256(keyBytes); //initiate HMAC
-                byte[] hmacBytes = cipherText.Skip(maxSaltIVLength + cipherTextLength).ToArray();
+                byte[] hmacBytes = cipherText.Skip(Variables.maxSaltIVLength + cipherTextLength).ToArray();
                 byte[] checkHMAC = hmac.ComputeHash(ivPlusCipherTextBytes);
 
                 //Data Integrity Check
@@ -143,7 +137,7 @@ namespace SimpleVpn.Crypto
         //Helper Method to generate a random value to be used for salt or initialization vector (IV)
         private byte[] GenerateRandomCryptoValue()
         {
-            byte[] result = new byte[maxSaltIVLength];
+            byte[] result = new byte[Variables.maxSaltIVLength];
 
             using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
             {
